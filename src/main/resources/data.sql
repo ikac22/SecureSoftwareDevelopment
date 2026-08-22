@@ -48,5 +48,5 @@ insert into role_to_permissions(roleId, permissionId)
 values (1, 1),
        (2, 1);
 
-insert into services(personId, date, carModel, description)
-values (1, CURRENT_DATE, 'Mercedes S 560', 'Regular maintenance');
+insert into services(personId, carModel, description)
+values (1, 'Mercedes S 560', 'Regular maintenance');

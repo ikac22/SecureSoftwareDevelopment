@@ -77,10 +77,9 @@ create table role_to_permissions(
 create table services(
      id                       int          NOT NULL AUTO_INCREMENT,
      personId                 int          NOT NULL,
-     date                     date         NOT NULL,
+     date                     date,
      carModel                 varchar(255) NOT NULL,
      description              varchar(1000) NOT NULL,
-     ticketNumber             varchar(255),
      time                     time,
      serviceStatus            varchar(32)  NOT NULL DEFAULT 'SCHEDULED',
      technician               varchar(255),
@@ -92,6 +91,7 @@ create table services(
          serviceStatus IN ('SCHEDULED', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELED')
      ),
      CONSTRAINT service_duration_check CHECK (
-         estimatedDurationMinutes IS NULL OR estimatedDurationMinutes > 0
+         estimatedDurationMinutes IS NULL OR
+         (estimatedDurationMinutes > 0 AND MOD(estimatedDurationMinutes, 30) = 0)
      )
 );

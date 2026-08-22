@@ -2,7 +2,7 @@ package com.zuehlke.securesoftwaredevelopment.controller;
 
 import com.zuehlke.securesoftwaredevelopment.domain.ScheduleService;
 import com.zuehlke.securesoftwaredevelopment.domain.Service;
-import com.zuehlke.securesoftwaredevelopment.domain.ServiceTicket;
+import com.zuehlke.securesoftwaredevelopment.domain.TechnicianAvailability;
 import com.zuehlke.securesoftwaredevelopment.domain.User;
 import com.zuehlke.securesoftwaredevelopment.repository.ServiceRepository;
 import com.zuehlke.securesoftwaredevelopment.service.ServiceWorkflowService;
@@ -14,12 +14,14 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.server.ResponseStatusException;
 
-import javax.servlet.http.HttpSession;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
 import java.util.List;
-import java.util.UUID;
 
 @Controller
 public class ServiceController {
@@ -48,13 +50,12 @@ public class ServiceController {
 
     @PostMapping("/schedule-service")
     public String scheduleService(ScheduleService scheduleService, Authentication authentication) throws SQLException {
-        if (scheduleService.getDate() == null || scheduleService.getDate().trim().isEmpty()
-                || scheduleService.getCarModel() == null || scheduleService.getCarModel().trim().isEmpty()
+        if (scheduleService.getCarModel() == null || scheduleService.getCarModel().trim().isEmpty()
                 || scheduleService.getDescription() == null
                 || scheduleService.getDescription().trim().isEmpty()
                 || scheduleService.getDescription().length() > 1000) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Date, car model and a valid service description are required");
+                    "Car model and a valid service description are required");
         }
         scheduleService.setCarModel(scheduleService.getCarModel().trim());
         scheduleService.setDescription(scheduleService.getDescription().trim());
@@ -64,24 +65,29 @@ public class ServiceController {
     }
 
     @GetMapping("/services/{id}")
-    public String showService(@PathVariable int id,
-                              @RequestParam(required = false) Integer estimatedDurationMinutes,
-                              Model model) {
-        Service service = serviceWorkflowService.get(id);
-        model.addAttribute("service", service);
-        if (estimatedDurationMinutes != null) {
-            model.addAttribute("estimatedDurationMinutes", estimatedDurationMinutes);
-            model.addAttribute("availableTechnicians",
-                    serviceWorkflowService.findAvailableTechnicians(id, estimatedDurationMinutes));
-        }
+    public String showService(@PathVariable int id, Model model) {
+        model.addAttribute("service", serviceWorkflowService.get(id));
         return "service-details";
+    }
+
+    @GetMapping("/services/{id}/available-slots")
+    @ResponseBody
+    public List<TechnicianAvailability> availableSlots(
+            @PathVariable int id,
+            @RequestParam String date,
+            @RequestParam int estimatedDurationMinutes) {
+        return serviceWorkflowService.findAvailableSlots(
+                id, parseDate(date), estimatedDurationMinutes);
     }
 
     @PostMapping("/services/{id}/assign")
     public String assignTechnician(@PathVariable int id,
                                    @RequestParam String technician,
+                                   @RequestParam String date,
+                                   @RequestParam String time,
                                    @RequestParam int estimatedDurationMinutes) {
-        serviceWorkflowService.assignTechnician(id, technician, estimatedDurationMinutes);
+        serviceWorkflowService.assignTechnician(
+                id, technician, parseDate(date), parseTime(time), estimatedDurationMinutes);
         return "redirect:/services/" + id;
     }
 
@@ -109,41 +115,19 @@ public class ServiceController {
         return "redirect:/services/" + id;
     }
 
-    @GetMapping("/confirm-service-1")
-    public String confirmService(HttpSession session, @RequestParam Integer id) {
-        ServiceTicket serviceTicket = new ServiceTicket();
-        serviceTicket.setTicketNumber(UUID.randomUUID());
-        serviceTicket.setId(id);
-        session.setAttribute("SERVICE_TICKET", serviceTicket);
-        return "confirm-service-1";
+    private LocalDate parseDate(String value) {
+        try {
+            return LocalDate.parse(value);
+        } catch (DateTimeParseException | NullPointerException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid service date");
+        }
     }
 
-    @PostMapping("/confirm-service-2")
-    public String confirmService2(HttpSession session, String time, Model model) {
-        ServiceTicket serviceTicket = (ServiceTicket) session.getAttribute("SERVICE_TICKET");
-        if (serviceTicket == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST, "Ticket has not been created.");
+    private LocalTime parseTime(String value) {
+        try {
+            return LocalTime.parse(value);
+        } catch (DateTimeParseException | NullPointerException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid service start time");
         }
-
-        serviceTicket.setTime(time);
-
-        model.addAttribute("serviceTicketNumber", serviceTicket.getTicketNumber());
-        model.addAttribute("time", serviceTicket.getTime());
-        return "confirm-service-2";
-    }
-
-    @PostMapping("/confirm-service-3")
-    public String confirmService3(HttpSession session) throws SQLException {
-        ServiceTicket serviceTicket = (ServiceTicket) session.getAttribute("SERVICE_TICKET");
-        if (serviceTicket == null || serviceTicket.getTime() == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST, "Ticket does not have time defined.");
-        }
-
-        serviceRepository.updateScheduledService(serviceTicket);
-        session.removeAttribute("SERVICE_TICKET");
-
-        return "redirect:/scheduled-services";
     }
 }

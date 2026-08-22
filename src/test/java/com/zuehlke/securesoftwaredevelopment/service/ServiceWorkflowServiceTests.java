@@ -3,11 +3,13 @@ package com.zuehlke.securesoftwaredevelopment.service;
 import com.zuehlke.securesoftwaredevelopment.domain.Service;
 import com.zuehlke.securesoftwaredevelopment.domain.ServiceStatus;
 import com.zuehlke.securesoftwaredevelopment.domain.Technician;
+import com.zuehlke.securesoftwaredevelopment.domain.TechnicianAvailability;
 import com.zuehlke.securesoftwaredevelopment.repository.ServiceRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -21,6 +23,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -29,6 +32,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class ServiceWorkflowServiceTests {
+    private static final LocalDate SERVICE_DATE = LocalDate.of(2030, 6, 1);
+
     private ServiceRepository serviceRepository;
     private TechnicianDirectory technicianDirectory;
     private ServiceWorkflowService workflowService;
@@ -41,20 +46,43 @@ class ServiceWorkflowServiceTests {
     }
 
     @Test
-    void overlappingAssignmentIsFilteredButAdjacentAssignmentIsAvailable() {
-        Service candidate = service(1, LocalTime.of(10, 0), 60, ServiceStatus.SCHEDULED, null);
-        Technician marko = new Technician("marko", "Marko", "marko@securecar.test");
-        Technician ana = new Technician("ana", "Ana", "ana@securecar.test");
-        when(serviceRepository.findById(1)).thenReturn(Optional.of(candidate));
+    void availabilityUsesThirtyMinuteSlotsWithinBusinessHoursAndFiltersOverlaps() {
+        Technician marko = technician("marko", "Marko");
+        Technician ana = technician("ana", "Ana");
+        when(serviceRepository.findById(1)).thenReturn(Optional.of(
+                service(1, null, null, ServiceStatus.SCHEDULED, null)));
         when(technicianDirectory.findAll()).thenReturn(Arrays.asList(marko, ana));
         when(serviceRepository.findActiveAssignments("marko", 1)).thenReturn(Collections.singletonList(
-                service(2, LocalTime.of(10, 30), 60, ServiceStatus.ASSIGNED, "marko")));
-        when(serviceRepository.findActiveAssignments("ana", 1)).thenReturn(Collections.singletonList(
-                service(3, LocalTime.of(11, 0), 60, ServiceStatus.IN_PROGRESS, "ana")));
+                service(2, LocalTime.of(9, 0), 60, ServiceStatus.ASSIGNED, "marko")));
+        when(serviceRepository.findActiveAssignments("ana", 1)).thenReturn(Collections.emptyList());
 
-        List<Technician> available = workflowService.findAvailableTechnicians(1, 60);
+        List<TechnicianAvailability> result =
+                workflowService.findAvailableSlots(1, SERVICE_DATE, 60);
 
-        assertThat(available).extracting(Technician::getId).containsExactly("ana");
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).getAvailableStartTimes())
+                .startsWith("08:00")
+                .doesNotContain("08:30", "09:00", "09:30")
+                .contains("10:00")
+                .endsWith("16:00");
+        assertThat(result.get(1).getAvailableStartTimes())
+                .hasSize(17)
+                .startsWith("08:00", "08:30")
+                .endsWith("15:30", "16:00");
+    }
+
+    @Test
+    void longerDurationMovesLastAvailableStartEarlier() {
+        Technician marko = technician("marko", "Marko");
+        when(serviceRepository.findById(1)).thenReturn(Optional.of(
+                service(1, null, null, ServiceStatus.SCHEDULED, null)));
+        when(technicianDirectory.findAll()).thenReturn(Collections.singletonList(marko));
+        when(serviceRepository.findActiveAssignments("marko", 1)).thenReturn(Collections.emptyList());
+
+        List<String> slots = workflowService.findAvailableSlots(1, SERVICE_DATE, 90)
+                .get(0).getAvailableStartTimes();
+
+        assertThat(slots).startsWith("08:00").endsWith("15:30").hasSize(16);
     }
 
     @ParameterizedTest
@@ -65,46 +93,71 @@ class ServiceWorkflowServiceTests {
             "10:00, 60",
             "10:30, 60"
     })
-    void everyOverlapShapeBlocksTechnician(String existingStart, int existingDuration) {
-        Service candidate = service(1, LocalTime.of(10, 0), 60, ServiceStatus.SCHEDULED, null);
-        Technician marko = new Technician("marko", "Marko", "marko@securecar.test");
-        when(serviceRepository.findById(1)).thenReturn(Optional.of(candidate));
+    void everyOverlapShapeBlocksTheAffectedSlot(String existingStart, int existingDuration) {
+        Technician marko = technician("marko", "Marko");
+        when(serviceRepository.findById(1)).thenReturn(Optional.of(
+                service(1, null, null, ServiceStatus.SCHEDULED, null)));
         when(technicianDirectory.findAll()).thenReturn(Collections.singletonList(marko));
         when(serviceRepository.findActiveAssignments("marko", 1)).thenReturn(Collections.singletonList(
                 service(2, LocalTime.parse(existingStart), existingDuration,
                         ServiceStatus.ASSIGNED, "marko")));
 
-        assertThat(workflowService.findAvailableTechnicians(1, 60)).isEmpty();
+        assertThat(workflowService.findAvailableSlots(1, SERVICE_DATE, 60)
+                .get(0).getAvailableStartTimes()).doesNotContain("10:00");
     }
 
     @Test
     void assignmentRechecksAvailabilityBeforeUpdatingService() {
-        Service candidate = service(1, LocalTime.of(10, 0), 60, ServiceStatus.SCHEDULED, null);
-        Technician marko = new Technician("marko", "Marko", "marko@securecar.test");
-        when(serviceRepository.findById(1)).thenReturn(Optional.of(candidate));
+        Technician marko = technician("marko", "Marko");
+        when(serviceRepository.findById(1)).thenReturn(Optional.of(
+                service(1, null, null, ServiceStatus.SCHEDULED, null)));
         when(technicianDirectory.findAll()).thenReturn(Collections.singletonList(marko));
         when(serviceRepository.findActiveAssignments("marko", 1)).thenReturn(Collections.singletonList(
                 service(2, LocalTime.of(9, 30), 60, ServiceStatus.ASSIGNED, "marko")));
 
-        assertThatThrownBy(() -> workflowService.assignTechnician(1, "marko", 60))
+        assertThatThrownBy(() -> workflowService.assignTechnician(
+                1, "marko", SERVICE_DATE, LocalTime.of(10, 0), 60))
                 .isInstanceOfSatisfying(ResponseStatusException.class,
                         exception -> assertThat(exception.getStatus()).isEqualTo(HttpStatus.CONFLICT));
-        verify(serviceRepository, never()).assignTechnician(anyInt(), anyString(), anyInt());
+        verify(serviceRepository, never()).assignTechnician(
+                anyInt(), anyString(), any(LocalDate.class), any(LocalTime.class), anyInt());
     }
 
     @Test
-    void assignmentRequiresConfirmedTimeAndPositiveDuration() {
-        Service withoutTime = new Service(1, 1, LocalDate.of(2030, 6, 1), null,
-                "Honda", "Maintenance", null, ServiceStatus.SCHEDULED,
-                null, null, null, null);
-        when(serviceRepository.findById(1)).thenReturn(Optional.of(withoutTime));
+    void assignmentPersistsTheCompleteSelection() {
+        Technician ana = technician("ana", "Ana");
+        when(serviceRepository.findById(1)).thenReturn(Optional.of(
+                service(1, null, null, ServiceStatus.SCHEDULED, null)));
+        when(technicianDirectory.findAll()).thenReturn(Collections.singletonList(ana));
+        when(serviceRepository.findActiveAssignments("ana", 1)).thenReturn(Collections.emptyList());
+        when(serviceRepository.assignTechnician(
+                1, "ana", SERVICE_DATE, LocalTime.of(13, 30), 90)).thenReturn(true);
 
-        assertThatThrownBy(() -> workflowService.findAvailableTechnicians(1, 60))
-                .isInstanceOf(ResponseStatusException.class);
+        workflowService.assignTechnician(1, "ana", SERVICE_DATE, LocalTime.of(13, 30), 90);
 
-        Service scheduled = service(1, LocalTime.of(10, 0), null, ServiceStatus.SCHEDULED, null);
-        when(serviceRepository.findById(1)).thenReturn(Optional.of(scheduled));
-        assertThatThrownBy(() -> workflowService.findAvailableTechnicians(1, 0))
+        verify(serviceRepository).assignTechnician(
+                1, "ana", SERVICE_DATE, LocalTime.of(13, 30), 90);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 15, 45, 570})
+    void durationMustFitTheBusinessDayInThirtyMinuteIncrements(int duration) {
+        when(serviceRepository.findById(1)).thenReturn(Optional.of(
+                service(1, null, null, ServiceStatus.SCHEDULED, null)));
+
+        assertThatThrownBy(() -> workflowService.findAvailableSlots(1, SERVICE_DATE, duration))
+                .isInstanceOfSatisfying(ResponseStatusException.class,
+                        exception -> assertThat(exception.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"07:30, 60", "08:15, 60", "16:30, 60", "17:00, 30"})
+    void assignmentRejectsStartsOutsideGeneratedSlots(String time, int duration) {
+        when(serviceRepository.findById(1)).thenReturn(Optional.of(
+                service(1, null, null, ServiceStatus.SCHEDULED, null)));
+
+        assertThatThrownBy(() -> workflowService.assignTechnician(
+                1, "marko", SERVICE_DATE, LocalTime.parse(time), duration))
                 .isInstanceOfSatisfying(ResponseStatusException.class,
                         exception -> assertThat(exception.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST));
     }
@@ -118,10 +171,14 @@ class ServiceWorkflowServiceTests {
                         exception -> assertThat(exception.getStatus()).isEqualTo(HttpStatus.CONFLICT));
     }
 
+    private Technician technician(String id, String displayName) {
+        return new Technician(id, displayName, id + "@securecar.test");
+    }
+
     private Service service(int id, LocalTime time, Integer duration,
                             ServiceStatus status, String technician) {
-        return new Service(id, 1, LocalDate.of(2030, 6, 1), time,
-                "Honda", "Maintenance", "ticket", status, technician,
+        return new Service(id, 1, time == null ? null : SERVICE_DATE, time,
+                "Honda", "Maintenance", status, technician,
                 duration, (LocalDateTime) null, null);
     }
 }

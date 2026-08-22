@@ -14,7 +14,6 @@ public class Service {
     private final LocalTime time;
     private final String carModel;
     private final String description;
-    private final String ticketNumber;
     private final ServiceStatus serviceStatus;
     private final String technician;
     private final Integer estimatedDurationMinutes;
@@ -29,7 +28,6 @@ public class Service {
         this.time = null;
         this.carModel = null;
         this.description = null;
-        this.ticketNumber = null;
         this.serviceStatus = null;
         this.technician = null;
         this.estimatedDurationMinutes = null;
@@ -46,7 +44,6 @@ public class Service {
         this.time = null;
         this.carModel = null;
         this.description = null;
-        this.ticketNumber = null;
         this.serviceStatus = serviceStatus;
         this.technician = technician;
         this.estimatedDurationMinutes = null;
@@ -55,7 +52,7 @@ public class Service {
     }
 
     public Service(Integer id, Integer personId, LocalDate date, LocalTime time,
-                   String carModel, String description, String ticketNumber,
+                   String carModel, String description,
                    ServiceStatus serviceStatus, String technician,
                    Integer estimatedDurationMinutes, LocalDateTime completedAt,
                    LocalDateTime canceledAt) {
@@ -66,7 +63,6 @@ public class Service {
         this.time = time;
         this.carModel = carModel;
         this.description = description;
-        this.ticketNumber = ticketNumber;
         this.serviceStatus = serviceStatus;
         this.technician = technician;
         this.estimatedDurationMinutes = estimatedDurationMinutes;
@@ -100,10 +96,6 @@ public class Service {
 
     public String getDescription() {
         return description;
-    }
-
-    public String getTicketNumber() {
-        return ticketNumber;
     }
 
     public ServiceStatus getServiceStatus() {

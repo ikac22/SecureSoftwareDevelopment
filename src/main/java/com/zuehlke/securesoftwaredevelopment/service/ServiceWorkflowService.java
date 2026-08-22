@@ -3,16 +3,26 @@ package com.zuehlke.securesoftwaredevelopment.service;
 import com.zuehlke.securesoftwaredevelopment.domain.Service;
 import com.zuehlke.securesoftwaredevelopment.domain.ServiceStatus;
 import com.zuehlke.securesoftwaredevelopment.domain.Technician;
+import com.zuehlke.securesoftwaredevelopment.domain.TechnicianAvailability;
 import com.zuehlke.securesoftwaredevelopment.repository.ServiceRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @org.springframework.stereotype.Service
 public class ServiceWorkflowService {
+    static final LocalTime OPENING_TIME = LocalTime.of(8, 0);
+    static final LocalTime CLOSING_TIME = LocalTime.of(17, 0);
+    static final int SLOT_MINUTES = 30;
+
+    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
+
     private final ServiceRepository serviceRepository;
     private final TechnicianDirectory technicianDirectory;
 
@@ -26,30 +36,52 @@ public class ServiceWorkflowService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Service not found"));
     }
 
-    public List<Technician> findAvailableTechnicians(int serviceId, int estimatedDurationMinutes) {
+    public List<TechnicianAvailability> findAvailableSlots(int serviceId, LocalDate date,
+                                                            int estimatedDurationMinutes) {
         Service service = get(serviceId);
-        validateAssignmentInput(service, estimatedDurationMinutes);
-        return technicianDirectory.findAll().stream()
-                .filter(technician -> isAvailable(
-                        technician.getId(), service, estimatedDurationMinutes))
-                .collect(Collectors.toList());
+        validateAssignableStatus(service);
+        validateDate(date);
+        validateDuration(estimatedDurationMinutes);
+
+        List<TechnicianAvailability> availability = new ArrayList<>();
+        for (Technician technician : technicianDirectory.findAll()) {
+            List<Service> activeAssignments =
+                    serviceRepository.findActiveAssignments(technician.getId(), serviceId);
+            List<String> availableStartTimes = new ArrayList<>();
+
+            for (LocalTime start = OPENING_TIME;
+                 !start.plusMinutes(estimatedDurationMinutes).isAfter(CLOSING_TIME);
+                 start = start.plusMinutes(SLOT_MINUTES)) {
+                if (isAvailable(date, start, estimatedDurationMinutes, activeAssignments)) {
+                    availableStartTimes.add(start.format(TIME_FORMAT));
+                }
+            }
+            availability.add(new TechnicianAvailability(technician, availableStartTimes));
+        }
+        return availability;
     }
 
-    public synchronized void assignTechnician(int serviceId, String technicianId,
-                                              int estimatedDurationMinutes) {
+    public synchronized void assignTechnician(int serviceId, String technicianId, LocalDate date,
+                                              LocalTime time, int estimatedDurationMinutes) {
         Service service = get(serviceId);
-        validateAssignmentInput(service, estimatedDurationMinutes);
+        validateAssignableStatus(service);
+        validateDate(date);
+        validateDuration(estimatedDurationMinutes);
+        validateStartTime(time, estimatedDurationMinutes);
 
         boolean knownTechnician = technicianDirectory.findAll().stream()
                 .anyMatch(technician -> technician.getId().equals(technicianId));
         if (!knownTechnician) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown technician");
         }
-        if (!isAvailable(technicianId, service, estimatedDurationMinutes)) {
+
+        List<Service> activeAssignments = serviceRepository.findActiveAssignments(technicianId, serviceId);
+        if (!isAvailable(date, time, estimatedDurationMinutes, activeAssignments)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Technician is no longer available for the selected time slot");
         }
-        if (!serviceRepository.assignTechnician(serviceId, technicianId, estimatedDurationMinutes)) {
+        if (!serviceRepository.assignTechnician(
+                serviceId, technicianId, date, time, estimatedDurationMinutes)) {
             throw invalidTransition();
         }
     }
@@ -72,27 +104,44 @@ public class ServiceWorkflowService {
         }
     }
 
-    private void validateAssignmentInput(Service service, int estimatedDurationMinutes) {
+    private void validateAssignableStatus(Service service) {
         if (service.getServiceStatus() != ServiceStatus.SCHEDULED
                 && service.getServiceStatus() != ServiceStatus.ASSIGNED) {
             throw invalidTransition();
         }
-        if (service.getDate() == null || service.getTime() == null) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Service time must be confirmed before assigning a technician");
-        }
-        if (estimatedDurationMinutes <= 0) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Estimated duration must be positive");
+    }
+
+    private void validateDate(LocalDate date) {
+        if (date == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Service date is required");
         }
     }
 
-    private boolean isAvailable(String technicianId, Service candidate,
-                                int estimatedDurationMinutes) {
-        LocalDateTime candidateStart = LocalDateTime.of(candidate.getDate(), candidate.getTime());
-        LocalDateTime candidateEnd = candidateStart.plusMinutes(estimatedDurationMinutes);
+    private void validateDuration(int estimatedDurationMinutes) {
+        int businessDayMinutes = (int) java.time.Duration.between(OPENING_TIME, CLOSING_TIME).toMinutes();
+        if (estimatedDurationMinutes <= 0
+                || estimatedDurationMinutes % SLOT_MINUTES != 0
+                || estimatedDurationMinutes > businessDayMinutes) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Estimated duration must be a 30-minute increment within business hours");
+        }
+    }
 
-        return serviceRepository.findActiveAssignments(technicianId, candidate.getId()).stream()
+    private void validateStartTime(LocalTime time, int estimatedDurationMinutes) {
+        if (time == null || time.getSecond() != 0 || time.getNano() != 0
+                || time.getMinute() % SLOT_MINUTES != 0
+                || time.isBefore(OPENING_TIME)
+                || time.plusMinutes(estimatedDurationMinutes).isAfter(CLOSING_TIME)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Start time must be a 30-minute slot between 08:00 and 17:00");
+        }
+    }
+
+    private boolean isAvailable(LocalDate date, LocalTime time, int estimatedDurationMinutes,
+                                List<Service> activeAssignments) {
+        LocalDateTime candidateStart = LocalDateTime.of(date, time);
+        LocalDateTime candidateEnd = candidateStart.plusMinutes(estimatedDurationMinutes);
+        return activeAssignments.stream()
                 .noneMatch(existing -> overlaps(candidateStart, candidateEnd, existing));
     }
 

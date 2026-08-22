@@ -1,7 +1,6 @@
 package com.zuehlke.securesoftwaredevelopment.domain;
 
 public class ScheduleService {
-    private String date;
     private String carModel;
     private String description;
 
@@ -21,11 +20,4 @@ public class ScheduleService {
         this.description = description;
     }
 
-    public String getDate() {
-        return date;
-    }
-
-    public void setDate(String date) {
-        this.date = date;
-    }
 }

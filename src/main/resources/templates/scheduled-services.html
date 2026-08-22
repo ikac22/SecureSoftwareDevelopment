@@ -46,9 +46,6 @@
             <td th:text="${service.technician ?: '-'}"></td>
             <td>
                 <a th:href="@{/services/{id}(id=${service.id})}">Details</a>
-                <span th:if="${service.serviceStatus.name() == 'SCHEDULED'}">
-                    | <a th:href="@{/confirm-service-1(id=${service.id})}">Confirm time</a>
-                </span>
                 <span th:if="${service.serviceStatus.name() == 'SCHEDULED' or service.serviceStatus.name() == 'ASSIGNED'}">
                     | <a th:href="@{/services/{id}/cancel(id=${service.id})}">Cancel</a>
                 </span>
