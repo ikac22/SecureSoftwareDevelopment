@@ -9,8 +9,12 @@ import org.springframework.ldap.core.AttributesMapper;
 import org.springframework.ldap.core.LdapTemplate;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
 class EmbeddedLdapIntegrationTests {
@@ -75,10 +79,29 @@ class EmbeddedLdapIntegrationTests {
     @Test
     void technicianDirectoryReturnsOnlyMembersOfTechnicianGroup() {
         List<Technician> technicians = technicianDirectory.findAll();
+        List<String> ids = technicians.stream().map(Technician::getId).collect(Collectors.toList());
 
-        assertEquals(1, technicians.size());
-        assertEquals("marko.markovic", technicians.get(0).getId());
-        assertEquals("Marko Markovic", technicians.get(0).getDisplayName());
-        assertEquals("marko.markovic@securecar.test", technicians.get(0).getEmail());
+        assertTrue(technicians.size() >= 10);
+        assertTrue(ids.contains("marko.markovic"));
+        assertTrue(ids.contains("jelena.jovanovic"));
+        assertFalse(ids.contains("ana.anic"));
+        assertFalse(ids.contains("nikola.nikolic"));
+    }
+
+    @Test
+    void technicianDirectorySearchesNameSurnameAndEmail() {
+        assertEquals("marija.maric", technicianDirectory.search("Marija").get(0).getId());
+        assertEquals("jelena.jovanovic", technicianDirectory.search("Jovanovic").get(0).getId());
+        assertEquals("petar.petrovic", technicianDirectory.search("petar.petrovic@securecar.test").get(0).getId());
+    }
+
+    @Test
+    void findByIdReturnsOnlyTechnicianGroupMembers() {
+        Optional<Technician> technician = technicianDirectory.findById("marko.markovic");
+
+        assertTrue(technician.isPresent());
+        assertEquals("Marko Markovic", technician.get().getDisplayName());
+        assertFalse(technicianDirectory.findById("ana.anic").isPresent());
+        assertFalse(technicianDirectory.findById("nikola.nikolic").isPresent());
     }
 }
