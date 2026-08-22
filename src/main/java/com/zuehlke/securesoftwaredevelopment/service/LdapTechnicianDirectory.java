@@ -3,6 +3,7 @@ package com.zuehlke.securesoftwaredevelopment.service;
 import com.zuehlke.securesoftwaredevelopment.domain.Technician;
 import org.springframework.ldap.core.AttributesMapper;
 import org.springframework.ldap.core.LdapTemplate;
+import org.springframework.ldap.filter.EqualsFilter;
 import org.springframework.stereotype.Component;
 
 import javax.naming.NamingEnumeration;
@@ -13,7 +14,10 @@ import javax.naming.ldap.Rdn;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -23,6 +27,7 @@ public class LdapTechnicianDirectory implements TechnicianDirectory {
     private static final String GROUPS_SEARCH_BASE = "ou=groups,dc=securecar,dc=test";
     private static final String TECHNICIAN_GROUP_FILTER =
             "(&(objectClass=groupOfNames)(cn=SERVICE_TECHNICIANS))";
+    private static final String[] SEARCH_ATTRIBUTES = {"cn", "givenName", "sn", "mail"};
 
     private final LdapTemplate ldapTemplate;
 
@@ -32,20 +37,64 @@ public class LdapTechnicianDirectory implements TechnicianDirectory {
 
     @Override
     public List<Technician> findAll() {
-        Set<String> technicianUids = findTechnicianUids();
-        if (technicianUids.isEmpty()) {
-            return Collections.emptyList();
+        return onlyTechnicians(searchPeople("(objectClass=inetOrgPerson)"));
+    }
+
+    @Override
+    public List<Technician> search(String query) {
+        if (query == null || query.trim().isEmpty()) {
+            return findAll();
         }
 
+        String normalizedQuery = query.trim();
+        Map<String, Technician> matches = new LinkedHashMap<>();
+
+        for (String attribute : SEARCH_ATTRIBUTES) {
+            String filter = "(&(objectClass=inetOrgPerson)(" + attribute + "=*" + normalizedQuery + "*))";
+            for (Technician technician : searchPeople(filter)) {
+                matches.putIfAbsent(technician.getId(), technician);
+            }
+        }
+
+        return onlyTechnicians(new ArrayList<>(matches.values()));
+    }
+
+    @Override
+    public Optional<Technician> findById(String uid) {
+        if (uid == null || uid.trim().isEmpty()) {
+            return Optional.empty();
+        }
+
+        String normalizedUid = uid.trim();
+        if (!findTechnicianUids().contains(normalizedUid)) {
+            return Optional.empty();
+        }
+
+        String safeUidFilter = new EqualsFilter("uid", normalizedUid).encode();
+        List<Technician> matches = searchPeople(
+                "(&(objectClass=inetOrgPerson)" + safeUidFilter + ")");
+        return matches.stream().findFirst();
+    }
+
+    private List<Technician> searchPeople(String filter) {
         return ldapTemplate.search(
                 PEOPLE_SEARCH_BASE,
-                "(objectClass=inetOrgPerson)",
+                filter,
                 (AttributesMapper<Technician>) attributes -> new Technician(
                         requiredAttribute(attributes.get("uid"), "uid"),
                         requiredAttribute(attributes.get("cn"), "cn"),
                         requiredAttribute(attributes.get("mail"), "mail")
                 )
-        ).stream()
+        );
+    }
+
+    private List<Technician> onlyTechnicians(List<Technician> candidates) {
+        Set<String> technicianUids = findTechnicianUids();
+        if (technicianUids.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return candidates.stream()
                 .filter(technician -> technicianUids.contains(technician.getId()))
                 .sorted((left, right) -> left.getDisplayName().compareTo(right.getDisplayName()))
                 .collect(Collectors.toList());
