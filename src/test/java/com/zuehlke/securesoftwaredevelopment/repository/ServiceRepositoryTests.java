@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.annotation.DirtiesContext;
 
 import java.sql.SQLException;
 
@@ -14,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @JdbcTest
 @Import(ServiceRepository.class)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 class ServiceRepositoryTests {
 
     @Autowired
