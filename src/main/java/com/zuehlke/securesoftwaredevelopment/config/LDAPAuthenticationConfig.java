@@ -12,10 +12,13 @@ import org.springframework.security.ldap.userdetails.DefaultLdapAuthoritiesPopul
 @Configuration
 public class LDAPAuthenticationConfig {
 
+    private static final String PEOPLE_SEARCH_BASE = "ou=people,dc=securecar,dc=test";
+    private static final String GROUPS_SEARCH_BASE = "ou=groups,dc=securecar,dc=test";
+
     @Bean("ldapAuthenticationProvider")
     public AuthenticationProvider ldapAuthenticationProvider(BaseLdapPathContextSource contextSource) {
         FilterBasedLdapUserSearch userSearch = new FilterBasedLdapUserSearch(
-                "ou=people",
+                PEOPLE_SEARCH_BASE,
                 "(mail={0})",
                 contextSource
         );
@@ -25,7 +28,7 @@ public class LDAPAuthenticationConfig {
         authenticator.setUserSearch(userSearch);
 
         DefaultLdapAuthoritiesPopulator authoritiesPopulator =
-                new DefaultLdapAuthoritiesPopulator(contextSource, "ou=groups");
+                new DefaultLdapAuthoritiesPopulator(contextSource, GROUPS_SEARCH_BASE);
         authoritiesPopulator.setGroupSearchFilter("(member={0})");
         authoritiesPopulator.setGroupRoleAttribute("cn");
         authoritiesPopulator.setRolePrefix("ROLE_");
