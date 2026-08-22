@@ -13,25 +13,28 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @SpringBootTest
 class EmbeddedLdapIntegrationTests {
 
+    private static final String PEOPLE_SEARCH_BASE = "ou=people,dc=securecar,dc=test";
+    private static final String GROUPS_SEARCH_BASE = "ou=groups,dc=securecar,dc=test";
+
     @Autowired
     private LdapTemplate ldapTemplate;
 
     @Test
     void loadsSeededEmployees() {
         List<String> technicianEmails = ldapTemplate.search(
-                "ou=people",
+                PEOPLE_SEARCH_BASE,
                 "(mail=marko.markovic@securecar.test)",
                 (AttributesMapper<String>) attributes -> attributes.get("mail").get().toString()
         );
 
         List<String> managerEmails = ldapTemplate.search(
-                "ou=people",
+                PEOPLE_SEARCH_BASE,
                 "(mail=ana.anic@securecar.test)",
                 (AttributesMapper<String>) attributes -> attributes.get("mail").get().toString()
         );
 
         List<String> employeeEmails = ldapTemplate.search(
-                "ou=people",
+                PEOPLE_SEARCH_BASE,
                 "(mail=nikola.nikolic@securecar.test)",
                 (AttributesMapper<String>) attributes -> attributes.get("mail").get().toString()
         );
@@ -47,13 +50,13 @@ class EmbeddedLdapIntegrationTests {
     @Test
     void loadsSeededServiceGroups() {
         List<String> technicianGroups = ldapTemplate.search(
-                "ou=groups",
+                GROUPS_SEARCH_BASE,
                 "(&(objectClass=groupOfNames)(member=uid=marko.markovic,ou=people,dc=securecar,dc=test))",
                 (AttributesMapper<String>) attributes -> attributes.get("cn").get().toString()
         );
 
         List<String> managerGroups = ldapTemplate.search(
-                "ou=groups",
+                GROUPS_SEARCH_BASE,
                 "(&(objectClass=groupOfNames)(member=uid=ana.anic,ou=people,dc=securecar,dc=test))",
                 (AttributesMapper<String>) attributes -> attributes.get("cn").get().toString()
         );
