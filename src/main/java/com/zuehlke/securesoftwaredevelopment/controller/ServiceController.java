@@ -48,11 +48,15 @@ public class ServiceController {
 
     @PostMapping("/schedule-service")
     public String scheduleService(ScheduleService scheduleService, Authentication authentication) throws SQLException {
-        if (scheduleService.getDescription() == null
-                || scheduleService.getDescription().trim().isEmpty()) {
+        if (scheduleService.getDate() == null || scheduleService.getDate().trim().isEmpty()
+                || scheduleService.getCarModel() == null || scheduleService.getCarModel().trim().isEmpty()
+                || scheduleService.getDescription() == null
+                || scheduleService.getDescription().trim().isEmpty()
+                || scheduleService.getDescription().length() > 1000) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Service description is required");
+                    "Date, car model and a valid service description are required");
         }
+        scheduleService.setCarModel(scheduleService.getCarModel().trim());
         scheduleService.setDescription(scheduleService.getDescription().trim());
         User user = (User) authentication.getPrincipal();
         serviceRepository.insertScheduledService(user.getId(), scheduleService);

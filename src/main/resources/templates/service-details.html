@@ -66,6 +66,7 @@
     <div class="alert alert-warning"
          th:if="${service.serviceStatus.name() == 'SCHEDULED' and service.time == null}">
         Confirm the service time before assigning a technician.
+        <a th:href="@{/confirm-service-1(id=${service.id})}" class="alert-link">Confirm time</a>
     </div>
 
     <form th:if="${service.serviceStatus.name() == 'ASSIGNED'}"
