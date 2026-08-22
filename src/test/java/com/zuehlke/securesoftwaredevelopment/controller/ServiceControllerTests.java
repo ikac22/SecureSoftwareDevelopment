@@ -85,19 +85,20 @@ class ServiceControllerTests {
     }
 
     @Test
-    void availabilityEndpointParsesDateAndDelegatesToWorkflow() {
+    void availabilityEndpointParsesDateAndDelegatesSearchToWorkflow() {
         Technician technician = new Technician("ana", "Ana", "ana@securecar.test");
         List<TechnicianAvailability> expected = Collections.singletonList(
                 new TechnicianAvailability(technician, Collections.singletonList("10:30")));
-        when(workflowService.findAvailableSlots(1, LocalDate.of(2030, 6, 1), 50))
+        when(workflowService.findAvailableSlots(1, LocalDate.of(2030, 6, 1), 50, "mar"))
                 .thenReturn(expected);
 
-        assertThat(controller.availableSlots(1, "2030-06-01", 50)).isSameAs(expected);
+        assertThat(controller.availableSlots(1, "2030-06-01", 50, "mar")).isSameAs(expected);
+        verify(workflowService).findAvailableSlots(1, LocalDate.of(2030, 6, 1), 50, "mar");
     }
 
     @Test
     void availabilityEndpointRejectsInvalidDate() {
-        assertThatThrownBy(() -> controller.availableSlots(1, "not-a-date", 60))
+        assertThatThrownBy(() -> controller.availableSlots(1, "not-a-date", 60, ""))
                 .isInstanceOfSatisfying(ResponseStatusException.class,
                         exception -> assertThat(exception.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST));
     }
