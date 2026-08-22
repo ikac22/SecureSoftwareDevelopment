@@ -9,16 +9,12 @@
 <div layout:fragment="content">
     <form action="/schedule-service" method="POST">
         <div class="form-group">
-            <label for="date">Date</label>
-            <input id="date" class="form-control" type="date" name="date"/>
-        </div>
-        <div class="form-group">
             <label for="carModel">Car Model</label>
-            <input type="text" id="carModel" name="carModel" class="form-control" />
+            <input type="text" id="carModel" name="carModel" class="form-control" required/>
         </div>
         <div class="form-group">
-            <label for="remark">Remark</label>
-            <textarea id="remark" name="remark" class="form-control"></textarea>
+            <label for="description">Service description</label>
+            <textarea id="description" name="description" class="form-control" maxlength="1000" required></textarea>
         </div>
         <button type="submit" class="btn btn-primary">Schedule</button>
     </form>

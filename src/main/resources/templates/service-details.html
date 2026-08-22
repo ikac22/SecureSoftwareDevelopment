@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <meta charset="UTF-8">
+    <title>Service details</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <h1>Service details</h1>
+
+    <dl class="row">
+        <dt class="col-sm-3">ID</dt>
+        <dd class="col-sm-9" th:text="${service.id}"></dd>
+        <dt class="col-sm-3">Car model</dt>
+        <dd class="col-sm-9" th:text="${service.carModel}"></dd>
+        <dt class="col-sm-3">Description</dt>
+        <dd class="col-sm-9" th:text="${service.description}"></dd>
+        <dt class="col-sm-3">Date and time</dt>
+        <dd class="col-sm-9">
+            <span th:if="${service.date != null and service.time != null}"
+                  th:text="${service.date + ' at ' + service.time}"></span>
+            <span th:if="${service.date == null or service.time == null}">Not assigned</span>
+        </dd>
+        <dt class="col-sm-3">Status</dt>
+        <dd class="col-sm-9" th:text="${service.serviceStatus}"></dd>
+        <dt class="col-sm-3">Technician</dt>
+        <dd class="col-sm-9" th:text="${service.technician ?: '-'}"></dd>
+        <dt class="col-sm-3">Estimated duration</dt>
+        <dd class="col-sm-9"
+            th:text="${service.estimatedDurationMinutes == null ? '-' : service.estimatedDurationMinutes + ' minutes'}"></dd>
+        <dt class="col-sm-3" th:if="${service.completedAt != null}">Completed at</dt>
+        <dd class="col-sm-9" th:if="${service.completedAt != null}" th:text="${service.completedAt}"></dd>
+        <dt class="col-sm-3" th:if="${service.canceledAt != null}">Canceled at</dt>
+        <dd class="col-sm-9" th:if="${service.canceledAt != null}" th:text="${service.canceledAt}"></dd>
+    </dl>
+
+    <button th:if="${service.serviceStatus.name() == 'SCHEDULED' or service.serviceStatus.name() == 'ASSIGNED'}"
+            type="button" class="btn btn-primary" data-toggle="modal" data-target="#assignmentModal"
+            th:text="${service.serviceStatus.name() == 'ASSIGNED' ? 'Change assignment' : 'Assign service'}">
+        Assign service
+    </button>
+
+    <form th:if="${service.serviceStatus.name() == 'ASSIGNED'}"
+          th:action="@{/services/{id}/start(id=${service.id})}" method="POST" class="d-inline">
+        <button type="submit" class="btn btn-success">Start service</button>
+    </form>
+
+    <form th:if="${service.serviceStatus.name() == 'IN_PROGRESS'}"
+          th:action="@{/services/{id}/complete(id=${service.id})}" method="POST" class="d-inline">
+        <button type="submit" class="btn btn-success">Complete service</button>
+    </form>
+
+    <a th:if="${service.serviceStatus.name() == 'SCHEDULED' or service.serviceStatus.name() == 'ASSIGNED'}"
+       th:href="@{/services/{id}/cancel(id=${service.id})}" class="btn btn-danger">Cancel service</a>
+
+    <a th:href="@{/scheduled-services}" class="btn btn-link">Back to services</a>
+
+    <div th:if="${service.serviceStatus.name() == 'SCHEDULED' or service.serviceStatus.name() == 'ASSIGNED'}"
+         class="modal fade" id="assignmentModal" tabindex="-1" role="dialog"
+         aria-labelledby="assignmentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl" role="document">
+            <form id="assignmentForm" class="modal-content"
+                  th:action="@{/services/{id}/assign(id=${service.id})}" method="POST">
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="assignmentModalLabel">Assign service</h2>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label for="assignmentDate">Service date</label>
+                            <input id="assignmentDate" name="date" class="form-control" type="date" required
+                                   th:value="${service.date}"/>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="assignmentDuration">Estimated duration</label>
+                            <div class="input-group">
+                                <input id="assignmentDuration" name="estimatedDurationMinutes"
+                                       class="form-control" type="number" min="1" max="540" step="1" required
+                                       th:value="${service.estimatedDurationMinutes ?: 60}"/>
+                                <div class="input-group-append">
+                                    <span class="input-group-text">minutes</span>
+                                </div>
+                            </div>
+                            <small class="form-text text-muted">Enter the actual estimate. Calendar time is reserved in 30-minute blocks.</small>
+                        </div>
+                    </div>
+
+                    <input id="selectedTechnician" type="hidden" name="technician"/>
+                    <input id="selectedTime" type="hidden" name="time"/>
+
+                    <div id="availability"
+                         th:data-url="@{/services/{id}/available-slots(id=${service.id})}"
+                         th:data-current-date="${service.date}"
+                         th:data-current-duration="${service.estimatedDurationMinutes}"
+                         th:data-current-technician="${service.technician}"
+                         th:data-current-time="${service.time}">
+                    </div>
+                    <div id="selectedSlotSummary" class="alert alert-info mt-3 mb-0 d-none" aria-live="polite"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button id="confirmAssignment" type="submit" class="btn btn-primary" disabled>
+                        Confirm assignment
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            var modal = document.getElementById('assignmentModal');
+            if (!modal) {
+                return;
+            }
+
+            var dateInput = document.getElementById('assignmentDate');
+            var durationInput = document.getElementById('assignmentDuration');
+            var availability = document.getElementById('availability');
+            var selectedTechnician = document.getElementById('selectedTechnician');
+            var selectedTime = document.getElementById('selectedTime');
+            var selectedSlotSummary = document.getElementById('selectedSlotSummary');
+            var confirmButton = document.getElementById('confirmAssignment');
+            var requestVersion = 0;
+            var keepCurrentAssignment = true;
+
+            function clearSelection() {
+                selectedTechnician.value = '';
+                selectedTime.value = '';
+                confirmButton.disabled = true;
+                selectedSlotSummary.textContent = '';
+                selectedSlotSummary.classList.add('d-none');
+            }
+
+            function showMessage(message, style) {
+                availability.innerHTML = '';
+                var alert = document.createElement('div');
+                alert.className = 'alert ' + style + ' mb-0';
+                alert.textContent = message;
+                availability.appendChild(alert);
+            }
+
+            function selectSlot(technician, time) {
+                var estimatedMinutes = Number(durationInput.value);
+                var allocatedMinutes = Math.ceil(estimatedMinutes / 30) * 30;
+                var durationSummary = estimatedMinutes + ' estimated minutes';
+                if (allocatedMinutes !== estimatedMinutes) {
+                    durationSummary += ', ' + allocatedMinutes + '-minute calendar slot';
+                }
+                selectedTechnician.value = technician.id;
+                selectedTime.value = time;
+                selectedSlotSummary.textContent =
+                    technician.displayName + ' — ' + dateInput.value + ' at ' + time +
+                    ' (' + durationSummary + ')';
+                selectedSlotSummary.classList.remove('d-none');
+                confirmButton.disabled = false;
+            }
+
+            function renderAvailability(items) {
+                availability.innerHTML = '';
+                var slotCount = 0;
+
+                items.forEach(function (item, technicianIndex) {
+                    var card = document.createElement('div');
+                    card.className = 'card mb-3';
+
+                    var cardBody = document.createElement('div');
+                    cardBody.className = 'card-body';
+
+                    var title = document.createElement('h3');
+                    title.className = 'h6 card-title';
+                    title.textContent = item.technician.displayName + ' (' + item.technician.email + ')';
+                    cardBody.appendChild(title);
+
+                    if (item.availableStartTimes.length === 0) {
+                        var noSlots = document.createElement('span');
+                        noSlots.className = 'text-muted';
+                        noSlots.textContent = 'No available start times.';
+                        cardBody.appendChild(noSlots);
+                    }
+
+                    item.availableStartTimes.forEach(function (time, timeIndex) {
+                        slotCount += 1;
+                        var wrapper = document.createElement('div');
+                        wrapper.className = 'form-check form-check-inline mb-2';
+
+                        var radio = document.createElement('input');
+                        radio.className = 'form-check-input';
+                        radio.type = 'radio';
+                        radio.name = 'availableSlot';
+                        radio.id = 'slot-' + technicianIndex + '-' + timeIndex;
+                        radio.value = item.technician.id + '|' + time;
+
+                        var label = document.createElement('label');
+                        label.className = 'form-check-label';
+                        label.htmlFor = radio.id;
+                        label.textContent = time;
+
+                        radio.addEventListener('change', function () {
+                            selectSlot(item.technician, time);
+                        });
+
+                        var isCurrent = keepCurrentAssignment &&
+                            availability.dataset.currentDate === dateInput.value &&
+                            availability.dataset.currentDuration === durationInput.value &&
+                            availability.dataset.currentTechnician === item.technician.id &&
+                            availability.dataset.currentTime &&
+                            availability.dataset.currentTime.substring(0, 5) === time;
+                        if (isCurrent) {
+                            radio.checked = true;
+                            selectSlot(item.technician, time);
+                        }
+
+                        wrapper.appendChild(radio);
+                        wrapper.appendChild(label);
+                        cardBody.appendChild(wrapper);
+                    });
+
+                    card.appendChild(cardBody);
+                    availability.appendChild(card);
+                });
+
+                if (slotCount === 0) {
+                    showMessage('No mechanics have an available start time for the selected date and duration.', 'alert-warning');
+                }
+            }
+
+            function refreshAvailability() {
+                var currentRequest = ++requestVersion;
+                clearSelection();
+
+                if (!dateInput.value || !durationInput.checkValidity()) {
+                    showMessage('Choose a valid date and estimated duration.', 'alert-secondary');
+                    return;
+                }
+
+                // showMessage('Loading available start times…', 'alert-secondary');
+                var query = '?date=' + encodeURIComponent(dateInput.value) +
+                    '&estimatedDurationMinutes=' + encodeURIComponent(durationInput.value);
+
+                fetch(availability.dataset.url + query, {credentials: 'same-origin'})
+                    .then(function (response) {
+                        if (!response.ok) {
+                            throw new Error('Availability request failed');
+                        }
+                        return response.json();
+                    })
+                    .then(function (items) {
+                        if (currentRequest === requestVersion) {
+                            renderAvailability(items);
+                        }
+                    })
+                    .catch(function () {
+                        if (currentRequest === requestVersion) {
+                            showMessage('Available times could not be loaded. Please try again.', 'alert-danger');
+                        }
+                    });
+            }
+
+            dateInput.addEventListener('change', function () {
+                keepCurrentAssignment = false;
+                refreshAvailability();
+            });
+            durationInput.addEventListener('change', function () {
+                keepCurrentAssignment = false;
+                refreshAvailability();
+            });
+            $('#assignmentModal').on('shown.bs.modal', function () {
+                keepCurrentAssignment = true;
+                refreshAvailability();
+            });
+        }());
+    </script>
+</div>
+</body>
+</html>
