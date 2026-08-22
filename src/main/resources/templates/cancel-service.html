@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <meta charset="UTF-8">
+    <title>Cancel service</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <h1>Cancel service</h1>
+    <p>
+        Are you sure you want to cancel service
+        <strong th:text="${'#' + service.id}"></strong>
+        for <strong th:text="${service.carModel}"></strong>?
+    </p>
+    <form th:action="@{/services/{id}/cancel(id=${service.id})}" method="POST" class="d-inline">
+        <button type="submit" class="btn btn-danger">Confirm cancellation</button>
+    </form>
+    <a th:href="@{/services/{id}(id=${service.id})}" class="btn btn-secondary">Keep service</a>
+</div>
+</body>
+</html>

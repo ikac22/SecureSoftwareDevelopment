@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <meta charset="UTF-8">
+    <title>Service details</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <h1>Service details</h1>
+
+    <dl class="row">
+        <dt class="col-sm-3">ID</dt>
+        <dd class="col-sm-9" th:text="${service.id}"></dd>
+        <dt class="col-sm-3">Car model</dt>
+        <dd class="col-sm-9" th:text="${service.carModel}"></dd>
+        <dt class="col-sm-3">Description</dt>
+        <dd class="col-sm-9" th:text="${service.description}"></dd>
+        <dt class="col-sm-3">Date and time</dt>
+        <dd class="col-sm-9">
+            <span th:text="${service.date}"></span>
+            <span th:text="${service.time ?: 'time not confirmed'}"></span>
+        </dd>
+        <dt class="col-sm-3">Status</dt>
+        <dd class="col-sm-9" th:text="${service.serviceStatus}"></dd>
+        <dt class="col-sm-3">Technician</dt>
+        <dd class="col-sm-9" th:text="${service.technician ?: '-'}"></dd>
+        <dt class="col-sm-3">Estimated duration</dt>
+        <dd class="col-sm-9"
+            th:text="${service.estimatedDurationMinutes == null ? '-' : service.estimatedDurationMinutes + ' minutes'}"></dd>
+        <dt class="col-sm-3" th:if="${service.completedAt != null}">Completed at</dt>
+        <dd class="col-sm-9" th:if="${service.completedAt != null}" th:text="${service.completedAt}"></dd>
+        <dt class="col-sm-3" th:if="${service.canceledAt != null}">Canceled at</dt>
+        <dd class="col-sm-9" th:if="${service.canceledAt != null}" th:text="${service.canceledAt}"></dd>
+    </dl>
+
+    <div th:if="${(service.serviceStatus.name() == 'SCHEDULED' or service.serviceStatus.name() == 'ASSIGNED') and service.time != null}">
+        <h2>Assign technician</h2>
+        <form th:action="@{/services/{id}(id=${service.id})}" method="GET" class="form-inline mb-3">
+            <label for="estimatedDurationMinutes" class="mr-2">Estimated duration in minutes</label>
+            <input id="estimatedDurationMinutes" name="estimatedDurationMinutes" type="number" min="1" required
+                   class="form-control mr-2"
+                   th:value="${estimatedDurationMinutes ?: service.estimatedDurationMinutes}"/>
+            <button type="submit" class="btn btn-secondary">Find available technicians</button>
+        </form>
+
+        <form th:if="${availableTechnicians != null}"
+              th:action="@{/services/{id}/assign(id=${service.id})}" method="POST">
+            <input type="hidden" name="estimatedDurationMinutes" th:value="${estimatedDurationMinutes}"/>
+            <div class="alert alert-info" th:if="${#lists.isEmpty(availableTechnicians)}">
+                No technicians are available for this time slot.
+            </div>
+            <div class="form-check" th:each="technician: ${availableTechnicians}">
+                <input class="form-check-input" type="radio" name="technician" required
+                       th:id="${'technician-' + technician.id}" th:value="${technician.id}"/>
+                <label class="form-check-label" th:for="${'technician-' + technician.id}">
+                    <span th:text="${technician.displayName}"></span>
+                    (<span th:text="${technician.email}"></span>)
+                </label>
+            </div>
+            <button th:if="${!#lists.isEmpty(availableTechnicians)}" type="submit"
+                    class="btn btn-primary mt-2">Assign technician</button>
+        </form>
+    </div>
+
+    <div class="alert alert-warning"
+         th:if="${service.serviceStatus.name() == 'SCHEDULED' and service.time == null}">
+        Confirm the service time before assigning a technician.
+    </div>
+
+    <form th:if="${service.serviceStatus.name() == 'ASSIGNED'}"
+          th:action="@{/services/{id}/start(id=${service.id})}" method="POST" class="d-inline">
+        <button type="submit" class="btn btn-success">Start service</button>
+    </form>
+
+    <form th:if="${service.serviceStatus.name() == 'IN_PROGRESS'}"
+          th:action="@{/services/{id}/complete(id=${service.id})}" method="POST" class="d-inline">
+        <button type="submit" class="btn btn-success">Complete service</button>
+    </form>
+
+    <a th:if="${service.serviceStatus.name() == 'SCHEDULED' or service.serviceStatus.name() == 'ASSIGNED'}"
+       th:href="@{/services/{id}/cancel(id=${service.id})}" class="btn btn-danger">Cancel service</a>
+
+    <a th:href="@{/scheduled-services}" class="btn btn-link">Back to services</a>
+</div>
+</body>
+</html>
