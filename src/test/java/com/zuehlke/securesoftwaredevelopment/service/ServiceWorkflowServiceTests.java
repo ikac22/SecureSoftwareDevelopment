@@ -53,11 +53,11 @@ class ServiceWorkflowServiceTests {
                 service(1, null, null, ServiceStatus.SCHEDULED, null)));
         when(technicianDirectory.findAll()).thenReturn(Arrays.asList(marko, ana));
         when(serviceRepository.findActiveAssignments("marko", 1)).thenReturn(Collections.singletonList(
-                service(2, LocalTime.of(9, 0), 60, ServiceStatus.ASSIGNED, "marko")));
+                service(2, LocalTime.of(9, 0), 50, ServiceStatus.ASSIGNED, "marko")));
         when(serviceRepository.findActiveAssignments("ana", 1)).thenReturn(Collections.emptyList());
 
         List<TechnicianAvailability> result =
-                workflowService.findAvailableSlots(1, SERVICE_DATE, 60);
+                workflowService.findAvailableSlots(1, SERVICE_DATE, 50);
 
         assertThat(result).hasSize(2);
         assertThat(result.get(0).getAvailableStartTimes())
@@ -72,17 +72,23 @@ class ServiceWorkflowServiceTests {
     }
 
     @Test
-    void longerDurationMovesLastAvailableStartEarlier() {
+    void estimateIsRoundedUpOnlyForCalendarAllocation() {
         Technician marko = technician("marko", "Marko");
         when(serviceRepository.findById(1)).thenReturn(Optional.of(
                 service(1, null, null, ServiceStatus.SCHEDULED, null)));
         when(technicianDirectory.findAll()).thenReturn(Collections.singletonList(marko));
         when(serviceRepository.findActiveAssignments("marko", 1)).thenReturn(Collections.emptyList());
 
-        List<String> slots = workflowService.findAvailableSlots(1, SERVICE_DATE, 90)
+        List<String> slots = workflowService.findAvailableSlots(1, SERVICE_DATE, 61)
                 .get(0).getAvailableStartTimes();
 
         assertThat(slots).startsWith("08:00").endsWith("15:30").hasSize(16);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"1, 30", "30, 30", "31, 60", "50, 60", "61, 90", "540, 540"})
+    void allocationRoundsEstimateUpToTheNextThirtyMinutes(int estimate, int allocation) {
+        assertThat(ServiceWorkflowService.allocatedDurationMinutes(estimate)).isEqualTo(allocation);
     }
 
     @ParameterizedTest
@@ -131,17 +137,17 @@ class ServiceWorkflowServiceTests {
         when(technicianDirectory.findAll()).thenReturn(Collections.singletonList(ana));
         when(serviceRepository.findActiveAssignments("ana", 1)).thenReturn(Collections.emptyList());
         when(serviceRepository.assignTechnician(
-                1, "ana", SERVICE_DATE, LocalTime.of(13, 30), 90)).thenReturn(true);
+                1, "ana", SERVICE_DATE, LocalTime.of(13, 30), 50)).thenReturn(true);
 
-        workflowService.assignTechnician(1, "ana", SERVICE_DATE, LocalTime.of(13, 30), 90);
+        workflowService.assignTechnician(1, "ana", SERVICE_DATE, LocalTime.of(13, 30), 50);
 
         verify(serviceRepository).assignTechnician(
-                1, "ana", SERVICE_DATE, LocalTime.of(13, 30), 90);
+                1, "ana", SERVICE_DATE, LocalTime.of(13, 30), 50);
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {0, 15, 45, 570})
-    void durationMustFitTheBusinessDayInThirtyMinuteIncrements(int duration) {
+    @ValueSource(ints = {-1, 0, 541})
+    void estimatedDurationMustFitTheBusinessDay(int duration) {
         when(serviceRepository.findById(1)).thenReturn(Optional.of(
                 service(1, null, null, ServiceStatus.SCHEDULED, null)));
 

@@ -79,13 +79,13 @@
                             <label for="assignmentDuration">Estimated duration</label>
                             <div class="input-group">
                                 <input id="assignmentDuration" name="estimatedDurationMinutes"
-                                       class="form-control" type="number" min="30" max="540" step="30" required
+                                       class="form-control" type="number" min="1" max="540" step="1" required
                                        th:value="${service.estimatedDurationMinutes ?: 60}"/>
                                 <div class="input-group-append">
                                     <span class="input-group-text">minutes</span>
                                 </div>
                             </div>
-                            <small class="form-text text-muted">Available starts are calculated every 30 minutes, from 08:00 to 17:00.</small>
+                            <small class="form-text text-muted">Enter the actual estimate. Calendar time is reserved in 30-minute blocks.</small>
                         </div>
                     </div>
 
@@ -146,11 +146,17 @@
             }
 
             function selectSlot(technician, time) {
+                var estimatedMinutes = Number(durationInput.value);
+                var allocatedMinutes = Math.ceil(estimatedMinutes / 30) * 30;
+                var durationSummary = estimatedMinutes + ' estimated minutes';
+                if (allocatedMinutes !== estimatedMinutes) {
+                    durationSummary += ', ' + allocatedMinutes + '-minute calendar slot';
+                }
                 selectedTechnician.value = technician.id;
                 selectedTime.value = time;
                 selectedSlotSummary.textContent =
                     technician.displayName + ' — ' + dateInput.value + ' at ' + time +
-                    ' (' + durationInput.value + ' minutes)';
+                    ' (' + durationSummary + ')';
                 selectedSlotSummary.classList.remove('d-none');
                 confirmButton.disabled = false;
             }
@@ -229,7 +235,7 @@
                 clearSelection();
 
                 if (!dateInput.value || !durationInput.checkValidity()) {
-                    showMessage('Choose a valid date and a duration in 30-minute increments.', 'alert-secondary');
+                    showMessage('Choose a valid date and an estimated duration between 1 and 540 minutes.', 'alert-secondary');
                     return;
                 }
 

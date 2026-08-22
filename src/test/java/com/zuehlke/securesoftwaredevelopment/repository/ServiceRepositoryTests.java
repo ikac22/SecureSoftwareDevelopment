@@ -51,14 +51,14 @@ class ServiceRepositoryTests {
     @Test
     void assignmentStoresDateTimeDurationAndTechnicianTogether() {
         assertThat(serviceRepository.assignTechnician(
-                1, "marko.markovic", SERVICE_DATE, SERVICE_TIME, 90)).isTrue();
+                1, "marko.markovic", SERVICE_DATE, SERVICE_TIME, 50)).isTrue();
 
         Service assigned = serviceRepository.findById(1).orElseThrow(AssertionError::new);
         assertThat(assigned.getServiceStatus()).isEqualTo(ServiceStatus.ASSIGNED);
         assertThat(assigned.getTechnician()).isEqualTo("marko.markovic");
         assertThat(assigned.getDate()).isEqualTo(SERVICE_DATE);
         assertThat(assigned.getTime()).isEqualTo(SERVICE_TIME);
-        assertThat(assigned.getEstimatedDurationMinutes()).isEqualTo(90);
+        assertThat(assigned.getEstimatedDurationMinutes()).isEqualTo(50);
     }
 
     @Test

@@ -92,6 +92,6 @@ create table services(
      ),
      CONSTRAINT service_duration_check CHECK (
          estimatedDurationMinutes IS NULL OR
-         (estimatedDurationMinutes > 0 AND MOD(estimatedDurationMinutes, 30) = 0)
+         (estimatedDurationMinutes > 0 AND estimatedDurationMinutes <= 540)
      )
 );

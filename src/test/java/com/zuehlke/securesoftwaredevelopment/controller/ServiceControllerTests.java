@@ -63,10 +63,10 @@ class ServiceControllerTests {
         Technician technician = new Technician("ana", "Ana", "ana@securecar.test");
         List<TechnicianAvailability> expected = Collections.singletonList(
                 new TechnicianAvailability(technician, Collections.singletonList("10:30")));
-        when(workflowService.findAvailableSlots(1, LocalDate.of(2030, 6, 1), 90))
+        when(workflowService.findAvailableSlots(1, LocalDate.of(2030, 6, 1), 50))
                 .thenReturn(expected);
 
-        assertThat(controller.availableSlots(1, "2030-06-01", 90)).isSameAs(expected);
+        assertThat(controller.availableSlots(1, "2030-06-01", 50)).isSameAs(expected);
     }
 
     @Test
@@ -79,13 +79,13 @@ class ServiceControllerTests {
     @Test
     void workflowActionsDelegateAndRedirectToDetails() {
         assertThat(controller.assignTechnician(
-                1, "ana", "2030-06-01", "13:30", 90)).isEqualTo("redirect:/services/1");
+                1, "ana", "2030-06-01", "13:30", 50)).isEqualTo("redirect:/services/1");
         assertThat(controller.cancelService(1)).isEqualTo("redirect:/services/1");
         assertThat(controller.startService(1)).isEqualTo("redirect:/services/1");
         assertThat(controller.completeService(1)).isEqualTo("redirect:/services/1");
 
         verify(workflowService).assignTechnician(
-                1, "ana", LocalDate.of(2030, 6, 1), LocalTime.of(13, 30), 90);
+                1, "ana", LocalDate.of(2030, 6, 1), LocalTime.of(13, 30), 50);
         verify(workflowService).cancel(1);
         verify(workflowService).start(1);
         verify(workflowService).complete(1);

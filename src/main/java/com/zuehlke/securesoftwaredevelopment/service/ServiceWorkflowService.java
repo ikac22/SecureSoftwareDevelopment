@@ -42,6 +42,7 @@ public class ServiceWorkflowService {
         validateAssignableStatus(service);
         validateDate(date);
         validateDuration(estimatedDurationMinutes);
+        int allocationMinutes = allocatedDurationMinutes(estimatedDurationMinutes);
 
         List<TechnicianAvailability> availability = new ArrayList<>();
         for (Technician technician : technicianDirectory.findAll()) {
@@ -50,9 +51,9 @@ public class ServiceWorkflowService {
             List<String> availableStartTimes = new ArrayList<>();
 
             for (LocalTime start = OPENING_TIME;
-                 !start.plusMinutes(estimatedDurationMinutes).isAfter(CLOSING_TIME);
+                 !start.plusMinutes(allocationMinutes).isAfter(CLOSING_TIME);
                  start = start.plusMinutes(SLOT_MINUTES)) {
-                if (isAvailable(date, start, estimatedDurationMinutes, activeAssignments)) {
+                if (isAvailable(date, start, allocationMinutes, activeAssignments)) {
                     availableStartTimes.add(start.format(TIME_FORMAT));
                 }
             }
@@ -67,7 +68,8 @@ public class ServiceWorkflowService {
         validateAssignableStatus(service);
         validateDate(date);
         validateDuration(estimatedDurationMinutes);
-        validateStartTime(time, estimatedDurationMinutes);
+        int allocationMinutes = allocatedDurationMinutes(estimatedDurationMinutes);
+        validateStartTime(time, allocationMinutes);
 
         boolean knownTechnician = technicianDirectory.findAll().stream()
                 .anyMatch(technician -> technician.getId().equals(technicianId));
@@ -76,7 +78,7 @@ public class ServiceWorkflowService {
         }
 
         List<Service> activeAssignments = serviceRepository.findActiveAssignments(technicianId, serviceId);
-        if (!isAvailable(date, time, estimatedDurationMinutes, activeAssignments)) {
+        if (!isAvailable(date, time, allocationMinutes, activeAssignments)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Technician is no longer available for the selected time slot");
         }
@@ -120,27 +122,30 @@ public class ServiceWorkflowService {
     private void validateDuration(int estimatedDurationMinutes) {
         int businessDayMinutes = (int) java.time.Duration.between(OPENING_TIME, CLOSING_TIME).toMinutes();
         if (estimatedDurationMinutes <= 0
-                || estimatedDurationMinutes % SLOT_MINUTES != 0
                 || estimatedDurationMinutes > businessDayMinutes) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Estimated duration must be a 30-minute increment within business hours");
+                    "Estimated duration must be positive and fit within business hours");
         }
     }
 
-    private void validateStartTime(LocalTime time, int estimatedDurationMinutes) {
+    static int allocatedDurationMinutes(int estimatedDurationMinutes) {
+        return ((estimatedDurationMinutes + SLOT_MINUTES - 1) / SLOT_MINUTES) * SLOT_MINUTES;
+    }
+
+    private void validateStartTime(LocalTime time, int allocatedDurationMinutes) {
         if (time == null || time.getSecond() != 0 || time.getNano() != 0
                 || time.getMinute() % SLOT_MINUTES != 0
                 || time.isBefore(OPENING_TIME)
-                || time.plusMinutes(estimatedDurationMinutes).isAfter(CLOSING_TIME)) {
+                || time.plusMinutes(allocatedDurationMinutes).isAfter(CLOSING_TIME)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Start time must be a 30-minute slot between 08:00 and 17:00");
         }
     }
 
-    private boolean isAvailable(LocalDate date, LocalTime time, int estimatedDurationMinutes,
+    private boolean isAvailable(LocalDate date, LocalTime time, int allocatedDurationMinutes,
                                 List<Service> activeAssignments) {
         LocalDateTime candidateStart = LocalDateTime.of(date, time);
-        LocalDateTime candidateEnd = candidateStart.plusMinutes(estimatedDurationMinutes);
+        LocalDateTime candidateEnd = candidateStart.plusMinutes(allocatedDurationMinutes);
         return activeAssignments.stream()
                 .noneMatch(existing -> overlaps(candidateStart, candidateEnd, existing));
     }
@@ -152,7 +157,8 @@ public class ServiceWorkflowService {
             return false;
         }
         LocalDateTime existingStart = LocalDateTime.of(existing.getDate(), existing.getTime());
-        LocalDateTime existingEnd = existingStart.plusMinutes(existing.getEstimatedDurationMinutes());
+        LocalDateTime existingEnd = existingStart.plusMinutes(
+                allocatedDurationMinutes(existing.getEstimatedDurationMinutes()));
         return existingStart.isBefore(candidateEnd) && existingEnd.isAfter(candidateStart);
     }
 
