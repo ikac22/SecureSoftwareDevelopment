@@ -98,7 +98,6 @@
                          th:data-current-duration="${service.estimatedDurationMinutes}"
                          th:data-current-technician="${service.technician}"
                          th:data-current-time="${service.time}">
-                        <div class="alert alert-secondary mb-0">Choose a date and duration to see available times.</div>
                     </div>
                     <div id="selectedSlotSummary" class="alert alert-info mt-3 mb-0 d-none" aria-live="polite"></div>
                 </div>
@@ -235,11 +234,11 @@
                 clearSelection();
 
                 if (!dateInput.value || !durationInput.checkValidity()) {
-                    showMessage('Choose a valid date and an estimated duration.', 'alert-secondary');
+                    showMessage('Choose a valid date and estimated duration.', 'alert-secondary');
                     return;
                 }
 
-                showMessage('Loading available start times…', 'alert-secondary');
+                // showMessage('Loading available start times…', 'alert-secondary');
                 var query = '?date=' + encodeURIComponent(dateInput.value) +
                     '&estimatedDurationMinutes=' + encodeURIComponent(durationInput.value);
 
