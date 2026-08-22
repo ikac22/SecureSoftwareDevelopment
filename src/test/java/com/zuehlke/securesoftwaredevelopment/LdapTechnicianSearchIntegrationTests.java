@@ -32,39 +32,31 @@ class LdapTechnicianSearchIntegrationTests {
     }
 
     @Test
-    void ldapFilterInjectionCanAddUidPredicateThroughSearchInput() throws Exception {
-        String injectedSearch = ")(uid=jelena.jovanovic)(cn=";
-
+    void ldapWildcardInjectionExpandsDirectorySearch() throws Exception {
         mockMvc.perform(get("/services/1/available-slots")
                 .with(user("service-manager"))
                 .param("date", "2030-06-01")
                 .param("estimatedDurationMinutes", "60")
-                .param("search", injectedSearch))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].technician.id").value("jelena.jovanovic"))
-                .andExpect(jsonPath("$[1]").doesNotExist());
-    }
-
-    @Test
-    void injectedSearchStillCannotExposeEmployeeOutsideTechnicianGroup() throws Exception {
-        String injectedSearch = ")(uid=nikola.nikolic)(cn=";
-
-        mockMvc.perform(get("/services/1/available-slots")
-                .with(user("service-manager"))
-                .param("date", "2030-06-01")
-                .param("estimatedDurationMinutes", "60")
-                .param("search", injectedSearch))
+                .param("search", "no-such-technician"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isEmpty());
+
+        mockMvc.perform(get("/services/1/available-slots")
+                .with(user("service-manager"))
+                .param("date", "2030-06-01")
+                .param("estimatedDurationMinutes", "60")
+                .param("search", "*"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(13))
+                .andExpect(jsonPath("$[0].technician.id").exists())
+                .andExpect(jsonPath("$[12].technician.id").exists());
     }
 
     @Test
-    void assignmentDoesNotTreatSearchSyntaxAsTechnicianIdentity() throws Exception {
-        String injectedUid = ")(uid=jelena.jovanovic)(cn=";
-
+    void assignmentDoesNotTreatSearchMetacharactersAsTechnicianIdentity() throws Exception {
         mockMvc.perform(post("/services/1/assign")
                 .with(user("service-manager"))
-                .param("technician", injectedUid)
+                .param("technician", "*")
                 .param("date", "2030-06-01")
                 .param("time", "10:00")
                 .param("estimatedDurationMinutes", "60"))
