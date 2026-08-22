@@ -1,5 +1,7 @@
 package com.zuehlke.securesoftwaredevelopment;
 
+import com.zuehlke.securesoftwaredevelopment.domain.Technician;
+import com.zuehlke.securesoftwaredevelopment.service.TechnicianDirectory;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -18,6 +20,9 @@ class EmbeddedLdapIntegrationTests {
 
     @Autowired
     private LdapTemplate ldapTemplate;
+
+    @Autowired
+    private TechnicianDirectory technicianDirectory;
 
     @Test
     void loadsSeededEmployees() {
@@ -65,5 +70,15 @@ class EmbeddedLdapIntegrationTests {
         assertEquals("SERVICE_TECHNICIANS", technicianGroups.get(0));
         assertEquals(1, managerGroups.size());
         assertEquals("SERVICE_MANAGERS", managerGroups.get(0));
+    }
+
+    @Test
+    void technicianDirectoryReturnsOnlyMembersOfTechnicianGroup() {
+        List<Technician> technicians = technicianDirectory.findAll();
+
+        assertEquals(1, technicians.size());
+        assertEquals("marko.markovic", technicians.get(0).getId());
+        assertEquals("Marko Markovic", technicians.get(0).getDisplayName());
+        assertEquals("marko.markovic@securecar.test", technicians.get(0).getEmail());
     }
 }
