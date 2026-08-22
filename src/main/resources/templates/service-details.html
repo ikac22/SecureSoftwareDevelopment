@@ -235,7 +235,7 @@
                 clearSelection();
 
                 if (!dateInput.value || !durationInput.checkValidity()) {
-                    showMessage('Choose a valid date and an estimated duration between 1 and 540 minutes.', 'alert-secondary');
+                    availability.innerHTML = '';
                     return;
                 }
 
