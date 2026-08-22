@@ -37,6 +37,23 @@ public class Service {
         this.canceledAt = null;
     }
 
+    public Service(Integer id, Integer personId, List<String> properties,
+                   ServiceStatus serviceStatus, String technician) {
+        this.id = id;
+        this.personId = personId;
+        this.properties = properties;
+        this.date = null;
+        this.time = null;
+        this.carModel = null;
+        this.description = null;
+        this.ticketNumber = null;
+        this.serviceStatus = serviceStatus;
+        this.technician = technician;
+        this.estimatedDurationMinutes = null;
+        this.completedAt = null;
+        this.canceledAt = null;
+    }
+
     public Service(Integer id, Integer personId, LocalDate date, LocalTime time,
                    String carModel, String description, String ticketNumber,
                    ServiceStatus serviceStatus, String technician,
