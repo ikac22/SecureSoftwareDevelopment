@@ -1,0 +1,62 @@
+dn: dc=securecar,dc=test
+objectClass: top
+objectClass: domain
+dc: securecar
+
+dn: ou=people,dc=securecar,dc=test
+objectClass: top
+objectClass: organizationalUnit
+ou: people
+
+dn: ou=groups,dc=securecar,dc=test
+objectClass: top
+objectClass: organizationalUnit
+ou: groups
+
+dn: uid=marko.markovic,ou=people,dc=securecar,dc=test
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: marko.markovic
+cn: Marko Markovic
+givenName: Marko
+sn: Markovic
+mail: marko.markovic@securecar.test
+userPassword: technician123
+
+dn: uid=ana.anic,ou=people,dc=securecar,dc=test
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: ana.anic
+cn: Ana Anic
+givenName: Ana
+sn: Anic
+mail: ana.anic@securecar.test
+userPassword: manager123
+
+dn: uid=nikola.nikolic,ou=people,dc=securecar,dc=test
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: nikola.nikolic
+cn: Nikola Nikolic
+givenName: Nikola
+sn: Nikolic
+mail: nikola.nikolic@securecar.test
+userPassword: employee123
+
+dn: cn=SERVICE_TECHNICIANS,ou=groups,dc=securecar,dc=test
+objectClass: top
+objectClass: groupOfNames
+cn: SERVICE_TECHNICIANS
+member: uid=marko.markovic,ou=people,dc=securecar,dc=test
+
+dn: cn=SERVICE_MANAGERS,ou=groups,dc=securecar,dc=test
+objectClass: top
+objectClass: groupOfNames
+cn: SERVICE_MANAGERS
+member: uid=ana.anic,ou=people,dc=securecar,dc=test
