@@ -21,7 +21,7 @@ public class ServiceRepository {
 
     public List<Service> getScheduled(String columns) {
         List<Service> services = new ArrayList<>();
-        String sqlQuery = "SELECT ss.id, ss.personId, " + columns + " FROM scheduled_services ss INNER JOIN persons ON ss.personId = persons.id";
+        String sqlQuery = "SELECT ss.id, ss.personId, " + columns + " FROM services ss INNER JOIN persons ON ss.personId = persons.id";
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sqlQuery)) {
             ResultSet rs = statement.executeQuery();
@@ -43,23 +43,23 @@ public class ServiceRepository {
     }
 
     public void insertScheduledService(int userId, ScheduleService scheduleService, String tableName) throws SQLException {
-        String sqlQuery = "insert into " + tableName + " (personId, carModel, date, remark) values (?, ?, ?, ?)";
+        String sqlQuery = "insert into " + tableName + " (personId, carModel, date, description) values (?, ?, ?, ?)";
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sqlQuery)) {
             statement.setInt(1, userId);
             statement.setString(2, scheduleService.getCarModel());
             statement.setDate(3, Date.valueOf(scheduleService.getDate()));
-            statement.setString(4, scheduleService.getRemark());
+            statement.setString(4, scheduleService.getDescription());
             statement.executeUpdate();
         }
     }
 
     public void insertScheduledService(int userId, ScheduleService scheduleService) throws SQLException {
-        insertScheduledService(userId, scheduleService, "scheduled_services");
+        insertScheduledService(userId, scheduleService, "services");
     }
 
     public void updateScheduledService(ServiceTicket serviceTicket) throws SQLException {
-        String sqlQuery = "update scheduled_services set ticketNumber = ?, time = ? where id = ?";
+        String sqlQuery = "update services set ticketNumber = ?, time = ? where id = ?";
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sqlQuery)) {
             statement.setString(1, serviceTicket.getTicketNumber().toString());

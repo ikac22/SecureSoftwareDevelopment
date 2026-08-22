@@ -2,6 +2,8 @@ drop table if exists users;
 drop table if exists person;
 drop table if exists cars;
 drop table if exists comments;
+drop table if exists scheduled_services;
+drop table if exists services;
 
 create table users
 (
@@ -72,13 +74,24 @@ create table role_to_permissions(
     permissionId   int          NOT NULL
 );
 
-create table scheduled_services(
-     id             int          NOT NULL AUTO_INCREMENT,
-     personId       int          NOT NULL,
-     date           date         NOT NULL,
-     carModel       varchar(255) NOT NULL,
-     remark         varchar(255),
-     ticketNumber   varchar(255),
-     time           time,
-     PRIMARY KEY (ID)
+create table services(
+     id                       int          NOT NULL AUTO_INCREMENT,
+     personId                 int          NOT NULL,
+     date                     date         NOT NULL,
+     carModel                 varchar(255) NOT NULL,
+     description              varchar(1000) NOT NULL,
+     ticketNumber             varchar(255),
+     time                     time,
+     serviceStatus            varchar(32)  NOT NULL DEFAULT 'SCHEDULED',
+     technician               varchar(255),
+     estimatedDurationMinutes int,
+     completedAt              timestamp,
+     canceledAt               timestamp,
+     PRIMARY KEY (ID),
+     CONSTRAINT service_status_check CHECK (
+         serviceStatus IN ('SCHEDULED', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELED')
+     ),
+     CONSTRAINT service_duration_check CHECK (
+         estimatedDurationMinutes IS NULL OR estimatedDurationMinutes > 0
+     )
 );
