@@ -72,6 +72,23 @@ class ServiceWorkflowServiceTests {
     }
 
     @Test
+    void availabilityUsesDirectorySearchBeforeCalculatingSlots() {
+        Technician marija = technician("marija.maric", "Marija Maric");
+        when(serviceRepository.findById(1)).thenReturn(Optional.of(
+                service(1, null, null, ServiceStatus.SCHEDULED, null)));
+        when(technicianDirectory.search("mar")).thenReturn(Collections.singletonList(marija));
+        when(serviceRepository.findActiveAssignments("marija.maric", 1)).thenReturn(Collections.emptyList());
+
+        List<TechnicianAvailability> result =
+                workflowService.findAvailableSlots(1, SERVICE_DATE, 60, "  mar  ");
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getTechnician().getId()).isEqualTo("marija.maric");
+        verify(technicianDirectory).search("mar");
+        verify(technicianDirectory, never()).findAll();
+    }
+
+    @Test
     void estimateIsRoundedUpOnlyForCalendarAllocation() {
         Technician marko = technician("marko", "Marko");
         when(serviceRepository.findById(1)).thenReturn(Optional.of(
@@ -117,7 +134,7 @@ class ServiceWorkflowServiceTests {
         Technician marko = technician("marko", "Marko");
         when(serviceRepository.findById(1)).thenReturn(Optional.of(
                 service(1, null, null, ServiceStatus.SCHEDULED, null)));
-        when(technicianDirectory.findAll()).thenReturn(Collections.singletonList(marko));
+        when(technicianDirectory.findById("marko")).thenReturn(Optional.of(marko));
         when(serviceRepository.findActiveAssignments("marko", 1)).thenReturn(Collections.singletonList(
                 service(2, LocalTime.of(9, 30), 60, ServiceStatus.ASSIGNED, "marko")));
 
@@ -134,7 +151,7 @@ class ServiceWorkflowServiceTests {
         Technician ana = technician("ana", "Ana");
         when(serviceRepository.findById(1)).thenReturn(Optional.of(
                 service(1, null, null, ServiceStatus.SCHEDULED, null)));
-        when(technicianDirectory.findAll()).thenReturn(Collections.singletonList(ana));
+        when(technicianDirectory.findById("ana")).thenReturn(Optional.of(ana));
         when(serviceRepository.findActiveAssignments("ana", 1)).thenReturn(Collections.emptyList());
         when(serviceRepository.assignTechnician(
                 1, "ana", SERVICE_DATE, LocalTime.of(13, 30), 50)).thenReturn(true);
@@ -143,6 +160,19 @@ class ServiceWorkflowServiceTests {
 
         verify(serviceRepository).assignTechnician(
                 1, "ana", SERVICE_DATE, LocalTime.of(13, 30), 50);
+    }
+
+    @Test
+    void assignmentRejectsEmployeeWhoIsNotATechnician() {
+        when(serviceRepository.findById(1)).thenReturn(Optional.of(
+                service(1, null, null, ServiceStatus.SCHEDULED, null)));
+        when(technicianDirectory.findById("employee")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> workflowService.assignTechnician(
+                1, "employee", SERVICE_DATE, LocalTime.of(10, 0), 60))
+                .isInstanceOfSatisfying(ResponseStatusException.class,
+                        exception -> assertThat(exception.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST));
+        verify(serviceRepository, never()).findActiveAssignments(anyString(), anyInt());
     }
 
     @ParameterizedTest
@@ -154,6 +184,18 @@ class ServiceWorkflowServiceTests {
         assertThatThrownBy(() -> workflowService.findAvailableSlots(1, SERVICE_DATE, duration))
                 .isInstanceOfSatisfying(ResponseStatusException.class,
                         exception -> assertThat(exception.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    @Test
+    void technicianSearchHasABoundedLength() {
+        when(serviceRepository.findById(1)).thenReturn(Optional.of(
+                service(1, null, null, ServiceStatus.SCHEDULED, null)));
+        String search = String.join("", Collections.nCopies(65, "a"));
+
+        assertThatThrownBy(() -> workflowService.findAvailableSlots(1, SERVICE_DATE, 60, search))
+                .isInstanceOfSatisfying(ResponseStatusException.class,
+                        exception -> assertThat(exception.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST));
+        verify(technicianDirectory, never()).search(anyString());
     }
 
     @ParameterizedTest
