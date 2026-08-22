@@ -1,6 +1,5 @@
 package com.zuehlke.securesoftwaredevelopment.config;
 
-import com.zuehlke.securesoftwaredevelopment.service.UserDetailsServiceImpl;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
@@ -13,12 +12,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
-    private final DatabaseAuthenticationProvider databaseAuthenticationProvider;
-    private final UserDetailsServiceImpl userDetailsService;
+    private final RoutingAuthenticationProvider routingAuthenticationProvider;
 
-    public SecurityConfig(DatabaseAuthenticationProvider databaseAuthenticationProvider, UserDetailsServiceImpl userDetailsService) {
-        this.databaseAuthenticationProvider = databaseAuthenticationProvider;
-        this.userDetailsService = userDetailsService;
+    public SecurityConfig(RoutingAuthenticationProvider routingAuthenticationProvider) {
+        this.routingAuthenticationProvider = routingAuthenticationProvider;
     }
 
     @Override
@@ -47,7 +44,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(AuthenticationManagerBuilder auth) {
-        auth.authenticationProvider(databaseAuthenticationProvider);
+        auth.authenticationProvider(routingAuthenticationProvider);
     }
 
     @Bean

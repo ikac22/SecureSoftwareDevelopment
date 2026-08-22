@@ -22,16 +22,16 @@ public class UserRepository {
         this.dataSource = dataSource;
     }
 
-    public User findUser(String username) {
-        String query = "SELECT id, username, password FROM users WHERE username='" + username + "'";
+    public User findUser(String identifier) {
+        String query = "SELECT id, username, password FROM users WHERE username='" + identifier + "' OR email='" + identifier + "'";
         try (Connection connection = dataSource.getConnection();
              Statement statement = connection.createStatement();
              ResultSet rs = statement.executeQuery(query)) {
             if (rs.next()) {
                 int id = rs.getInt(1);
-                String username1 = rs.getString(2);
+                String username = rs.getString(2);
                 String password = rs.getString(3);
-                return new User(id, username1, password);
+                return new User(id, username, password);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -39,8 +39,8 @@ public class UserRepository {
         return null;
     }
 
-    public boolean validCredentials(String username, String password) {
-        String query = "SELECT username FROM users WHERE username='" + username + "' AND password='" + password + "'";
+    public boolean validCredentials(String identifier, String password) {
+        String query = "SELECT username FROM users WHERE (username='" + identifier + "' OR email='" + identifier + "') AND password='" + password + "'";
         try (Connection connection = dataSource.getConnection();
              Statement statement = connection.createStatement();
              ResultSet rs = statement.executeQuery(query)) {
