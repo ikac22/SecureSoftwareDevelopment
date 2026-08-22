@@ -5,6 +5,7 @@ import com.zuehlke.securesoftwaredevelopment.domain.Service;
 import com.zuehlke.securesoftwaredevelopment.domain.ServiceStatus;
 import com.zuehlke.securesoftwaredevelopment.domain.Technician;
 import com.zuehlke.securesoftwaredevelopment.domain.TechnicianAvailability;
+import com.zuehlke.securesoftwaredevelopment.domain.User;
 import com.zuehlke.securesoftwaredevelopment.repository.ServiceRepository;
 import com.zuehlke.securesoftwaredevelopment.service.ServiceWorkflowService;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,6 +47,31 @@ class ServiceControllerTests {
         assertThatThrownBy(() -> controller.scheduleService(request, mock(Authentication.class)))
                 .isInstanceOfSatisfying(ResponseStatusException.class,
                         exception -> assertThat(exception.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    @Test
+    void servicesPageLoadsOnlyLoggedInCustomersServices() {
+        User customer = new User(42, "customer", "password");
+        Authentication authentication = mock(Authentication.class);
+        Service service = service(ServiceStatus.SCHEDULED);
+        when(authentication.getPrincipal()).thenReturn(customer);
+        when(serviceRepository.findByPersonId(42)).thenReturn(Collections.singletonList(service));
+        ConcurrentModel model = new ConcurrentModel();
+
+        assertThat(controller.showServices(authentication, model)).isEqualTo("scheduled-services");
+        assertThat(model.get("scheduledServices")).isEqualTo(Collections.singletonList(service));
+        assertThat(model.containsAttribute("columns")).isFalse();
+        verify(serviceRepository).findByPersonId(42);
+    }
+
+    @Test
+    void servicesPageRequiresCustomerPrincipal() {
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getPrincipal()).thenReturn("ldap-service-staff");
+
+        assertThatThrownBy(() -> controller.showServices(authentication, new ConcurrentModel()))
+                .isInstanceOfSatisfying(ResponseStatusException.class,
+                        exception -> assertThat(exception.getStatus()).isEqualTo(HttpStatus.FORBIDDEN));
     }
 
     @Test

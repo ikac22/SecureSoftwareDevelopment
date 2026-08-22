@@ -21,6 +21,9 @@ import java.util.Optional;
 
 @Repository
 public class ServiceRepository {
+    private static final String SERVICE_COLUMNS =
+            "id, personId, date, time, carModel, description, serviceStatus, technician, "
+                    + "estimatedDurationMinutes, completedAt, canceledAt";
 
     private final DataSource dataSource;
 
@@ -28,30 +31,22 @@ public class ServiceRepository {
         this.dataSource = dataSource;
     }
 
-    public List<Service> getScheduled(String columns) {
+    public List<Service> findByPersonId(int personId) {
         List<Service> services = new ArrayList<>();
-        String sqlQuery = "SELECT ss.id, ss.personId, ss.serviceStatus, ss.technician, " + columns
-                + " FROM services ss INNER JOIN persons ON ss.personId = persons.id";
+        String sqlQuery = "SELECT " + SERVICE_COLUMNS + " FROM services "
+                + "WHERE personId = ? ORDER BY id";
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sqlQuery)) {
-            ResultSet rs = statement.executeQuery();
-            int columnCount = rs.getMetaData().getColumnCount();
-            while (rs.next()) {
-                List<String> properties = new ArrayList<>();
-                int id = rs.getInt(1);
-                int personId = rs.getInt(2);
-                ServiceStatus serviceStatus = ServiceStatus.valueOf(rs.getString(3));
-                String technician = rs.getString(4);
-                for (int i = 5; i <= columnCount; i++) {
-                    String value = rs.getString(i);
-                    properties.add(value);
+            statement.setInt(1, personId);
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    services.add(mapService(rs));
                 }
-                services.add(new Service(id, personId, properties, serviceStatus, technician));
             }
+            return services;
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Could not load customer services", e);
         }
-        return services;
     }
 
     public void insertScheduledService(int userId, ScheduleService scheduleService, String tableName) throws SQLException {
@@ -70,9 +65,7 @@ public class ServiceRepository {
     }
 
     public Optional<Service> findById(int id) {
-        String sqlQuery = "SELECT id, personId, date, time, carModel, description, "
-                + "serviceStatus, technician, estimatedDurationMinutes, completedAt, canceledAt "
-                + "FROM services WHERE id = ?";
+        String sqlQuery = "SELECT " + SERVICE_COLUMNS + " FROM services WHERE id = ?";
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(sqlQuery)) {
             statement.setInt(1, id);
@@ -88,9 +81,8 @@ public class ServiceRepository {
     }
 
     public List<Service> findActiveAssignments(String technician, int excludedServiceId) {
-        String sqlQuery = "SELECT id, personId, date, time, carModel, description, "
-                + "serviceStatus, technician, estimatedDurationMinutes, completedAt, canceledAt "
-                + "FROM services WHERE technician = ? AND id <> ? "
+        String sqlQuery = "SELECT " + SERVICE_COLUMNS + " FROM services "
+                + "WHERE technician = ? AND id <> ? "
                 + "AND serviceStatus IN ('ASSIGNED', 'IN_PROGRESS')";
         List<Service> assignments = new ArrayList<>();
         try (Connection connection = dataSource.getConnection();

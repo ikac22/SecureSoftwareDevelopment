@@ -3,13 +3,10 @@ package com.zuehlke.securesoftwaredevelopment.domain;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.Collections;
-import java.util.List;
 
 public class Service {
     private final Integer id;
     private final Integer personId;
-    private final List<String> properties;
     private final LocalDate date;
     private final LocalTime time;
     private final String carModel;
@@ -20,37 +17,6 @@ public class Service {
     private final LocalDateTime completedAt;
     private final LocalDateTime canceledAt;
 
-    public Service(Integer id, Integer personId, List<String> properties) {
-        this.id = id;
-        this.personId = personId;
-        this.properties = properties;
-        this.date = null;
-        this.time = null;
-        this.carModel = null;
-        this.description = null;
-        this.serviceStatus = null;
-        this.technician = null;
-        this.estimatedDurationMinutes = null;
-        this.completedAt = null;
-        this.canceledAt = null;
-    }
-
-    public Service(Integer id, Integer personId, List<String> properties,
-                   ServiceStatus serviceStatus, String technician) {
-        this.id = id;
-        this.personId = personId;
-        this.properties = properties;
-        this.date = null;
-        this.time = null;
-        this.carModel = null;
-        this.description = null;
-        this.serviceStatus = serviceStatus;
-        this.technician = technician;
-        this.estimatedDurationMinutes = null;
-        this.completedAt = null;
-        this.canceledAt = null;
-    }
-
     public Service(Integer id, Integer personId, LocalDate date, LocalTime time,
                    String carModel, String description,
                    ServiceStatus serviceStatus, String technician,
@@ -58,7 +24,6 @@ public class Service {
                    LocalDateTime canceledAt) {
         this.id = id;
         this.personId = personId;
-        this.properties = Collections.emptyList();
         this.date = date;
         this.time = time;
         this.carModel = carModel;
@@ -72,10 +37,6 @@ public class Service {
 
     public Integer getId() {
         return id;
-    }
-
-    public List<String> getProperties() {
-        return properties;
     }
 
     public Integer getPersonId() {

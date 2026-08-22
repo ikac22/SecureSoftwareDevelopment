@@ -43,9 +43,27 @@ class ServiceRepositoryTests {
 
         serviceRepository.insertScheduledService(2, request);
 
-        assertThat(serviceRepository.getScheduled("description,date,time"))
-                .anySatisfy(service -> assertThat(service.getProperties())
-                        .containsExactly("Replace brake pads", null, null));
+        assertThat(serviceRepository.findByPersonId(2)).hasSize(1);
+        Service stored = serviceRepository.findByPersonId(2).get(0);
+        assertThat(stored.getDescription()).isEqualTo("Replace brake pads");
+        assertThat(stored.getDate()).isNull();
+        assertThat(stored.getTime()).isNull();
+    }
+
+    @Test
+    void customerServiceQueryDoesNotReturnAnotherCustomersServices() throws SQLException {
+        ScheduleService request = new ScheduleService();
+        request.setCarModel("Honda Civic");
+        request.setDescription("Replace brake pads");
+        serviceRepository.insertScheduledService(2, request);
+
+        assertThat(serviceRepository.findByPersonId(1))
+                .extracting(Service::getCarModel)
+                .containsExactly("Mercedes S 560");
+        assertThat(serviceRepository.findByPersonId(2))
+                .extracting(Service::getCarModel)
+                .containsExactly("Honda Civic");
+        assertThat(serviceRepository.findByPersonId(3)).isEmpty();
     }
 
     @Test

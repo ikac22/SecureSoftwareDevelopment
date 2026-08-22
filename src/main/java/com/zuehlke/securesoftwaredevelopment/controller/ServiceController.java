@@ -35,11 +35,9 @@ public class ServiceController {
     }
 
     @GetMapping("/scheduled-services")
-    public String showServices(@RequestParam(value = "columns", required = false, defaultValue = "firstName,lastName,carModel,date") String columns, Model model) {
-        List<Service> scheduledServices = serviceRepository.getScheduled(columns);
-        String[] c = columns.split(",");
-        model.addAttribute("columns", c);
-        model.addAttribute("scheduledServices", scheduledServices);
+    public String showServices(Authentication authentication, Model model) {
+        User customer = authenticatedCustomer(authentication);
+        model.addAttribute("scheduledServices", serviceRepository.findByPersonId(customer.getId()));
         return "scheduled-services";
     }
 
@@ -59,7 +57,7 @@ public class ServiceController {
         }
         scheduleService.setCarModel(scheduleService.getCarModel().trim());
         scheduleService.setDescription(scheduleService.getDescription().trim());
-        User user = (User) authentication.getPrincipal();
+        User user = authenticatedCustomer(authentication);
         serviceRepository.insertScheduledService(user.getId(), scheduleService);
         return "redirect:/scheduled-services";
     }
@@ -129,5 +127,12 @@ public class ServiceController {
         } catch (DateTimeParseException | NullPointerException exception) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid service start time");
         }
+    }
+
+    private User authenticatedCustomer(Authentication authentication) {
+        if (authentication == null || !(authentication.getPrincipal() instanceof User)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Customer account required");
+        }
+        return (User) authentication.getPrincipal();
     }
 }
