@@ -1,0 +1,27 @@
+name: Service workflow tests
+
+on:
+  pull_request:
+    paths:
+      - "pom.xml"
+      - "mvnw"
+      - ".mvn/**"
+      - "src/**"
+      - ".github/workflows/service-workflow-tests.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 8
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "8"
+          cache: maven
+
+      - name: Run tests
+        run: bash mvnw test
