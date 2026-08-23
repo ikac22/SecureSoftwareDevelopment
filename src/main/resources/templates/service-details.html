@@ -461,7 +461,7 @@
                 clearSelection();
 
                 if (!dateInput.value || !durationInput.checkValidity()) {
-                    showMessage('Choose a valid date and estimated duration.', 'alert-secondary');
+                    availability.innerHTML = '';
                     return;
                 }
 
