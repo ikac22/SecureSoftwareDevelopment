@@ -8,6 +8,8 @@ import java.nio.file.Paths;
 
 @Component
 public class ServiceDocumentStorage {
+    public static final String ARCHIVE_NAME = "service-documents.tar.gz";
+
     private final Path root;
 
     public ServiceDocumentStorage(@Value("${app.service-documents.root:service-documents}") String root) {
@@ -16,5 +18,9 @@ public class ServiceDocumentStorage {
 
     public Path serviceDirectory(int serviceId) {
         return root.resolve("service-" + serviceId).normalize();
+    }
+
+    public Path serviceArchive(int serviceId) {
+        return serviceDirectory(serviceId).resolve(ARCHIVE_NAME);
     }
 }
