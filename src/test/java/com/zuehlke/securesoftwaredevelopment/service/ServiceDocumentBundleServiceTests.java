@@ -44,7 +44,7 @@ class ServiceDocumentBundleServiceTests {
                 "work".getBytes(StandardCharsets.UTF_8));
 
         ServiceDocumentBundleService bundleService =
-                new ServiceDocumentBundleService(repository, storage, false);
+                new ServiceDocumentBundleService(repository, storage);
 
         byte[] bundle = bundleService.createBundle(127, 42, Arrays.asList(
                 ServiceDocumentBundleService.SERVICE_OVERVIEW,
@@ -62,7 +62,7 @@ class ServiceDocumentBundleServiceTests {
         ServiceRepository repository = repositoryWith(completedService(127, 99));
         ServiceDocumentStorage storage = new ServiceDocumentStorage(tempDirectory.toString());
         ServiceDocumentBundleService bundleService =
-                new ServiceDocumentBundleService(repository, storage, false);
+                new ServiceDocumentBundleService(repository, storage);
 
         assertThatThrownBy(() -> bundleService.createBundle(127, 42,
                 Collections.singletonList(ServiceDocumentBundleService.SERVICE_OVERVIEW)))
@@ -72,7 +72,7 @@ class ServiceDocumentBundleServiceTests {
     }
 
     @Test
-    void vulnerableModeLetsLeadingDashPdfReachGnuTarOptionParser() throws Exception {
+    void leadingDashPdfReachesGnuTarOptionParser() throws Exception {
         ServiceRepository repository = repositoryWith(completedService(127, 42));
         ServiceDocumentStorage storage = new ServiceDocumentStorage(tempDirectory.toString());
         Path serviceDirectory = storage.serviceDirectory(127);
@@ -83,7 +83,7 @@ class ServiceDocumentBundleServiceTests {
         Files.write(serviceDirectory.resolve(ServiceDocumentBundleService.SERVICE_OVERVIEW), largePdfFixture);
 
         ServiceDocumentBundleService bundleService =
-                new ServiceDocumentBundleService(repository, storage, false);
+                new ServiceDocumentBundleService(repository, storage);
 
         String injectedTarOption = "--checkpoint-action=exec=:>bundle-proof.pdf";
         byte[] bundle = bundleService.createBundle(127, 42, Arrays.asList(
@@ -92,27 +92,6 @@ class ServiceDocumentBundleServiceTests {
 
         assertThat(bundle).isNotEmpty();
         assertThat(serviceDirectory.resolve("bundle-proof.pdf")).exists();
-    }
-
-    @Test
-    void safeModeMapsSelectionToServerOwnedDocumentsAndRejectsInjectedOption() throws Exception {
-        ServiceRepository repository = repositoryWith(completedService(127, 42));
-        ServiceDocumentStorage storage = new ServiceDocumentStorage(tempDirectory.toString());
-        Path serviceDirectory = storage.serviceDirectory(127);
-        Files.createDirectories(serviceDirectory);
-        Files.write(serviceDirectory.resolve(ServiceDocumentBundleService.SERVICE_OVERVIEW),
-                "overview".getBytes(StandardCharsets.UTF_8));
-
-        ServiceDocumentBundleService bundleService =
-                new ServiceDocumentBundleService(repository, storage, true);
-
-        assertThatThrownBy(() -> bundleService.createBundle(127, 42, Arrays.asList(
-                "--checkpoint-action=exec=:>bundle-proof.pdf",
-                ServiceDocumentBundleService.SERVICE_OVERVIEW)))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(error -> assertThat(((ResponseStatusException) error).getStatus())
-                        .isEqualTo(HttpStatus.BAD_REQUEST));
-        assertThat(serviceDirectory.resolve("bundle-proof.pdf")).doesNotExist();
     }
 
     private ServiceRepository repositoryWith(Service service) {
