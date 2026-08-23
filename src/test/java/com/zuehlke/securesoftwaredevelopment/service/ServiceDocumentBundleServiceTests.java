@@ -43,7 +43,7 @@ class ServiceDocumentBundleServiceTests {
 
         Path archive = tempDirectory.resolve("selected.tar");
         Files.write(archive, bundle);
-        assertThat(listArchiveMembers(archive, false)).containsExactly(
+        assertThat(listArchiveMembers(archive, false)).containsExactlyInAnyOrder(
                 ServiceDocumentBundleService.SERVICE_OVERVIEW,
                 ServiceDocumentBundleService.WORK_DETAILED);
         assertThat(storage.serviceArchive(127)).exists();

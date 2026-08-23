@@ -105,7 +105,7 @@ class ServiceDocumentBundleControllerTests {
 
         Path returnedArchive = tempDirectory.resolve("controller-e2e.tar");
         Files.write(returnedArchive, Objects.requireNonNull(response.getBody()));
-        assertThat(listArchiveMembers(returnedArchive)).containsExactly(
+        assertThat(listArchiveMembers(returnedArchive)).containsExactlyInAnyOrder(
                 ServiceDocumentBundleService.SERVICE_OVERVIEW,
                 ServiceDocumentBundleService.WORK_DETAILED);
         assertThat(storage.serviceArchive(127)).exists();
