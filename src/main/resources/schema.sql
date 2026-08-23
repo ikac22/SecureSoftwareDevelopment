@@ -31,6 +31,7 @@ create table persons
     lastName       varchar(255) not null,
     personalNumber varchar(255) not null,
     address        varchar(255) not null,
+    partnerCode    varchar(255),
     PRIMARY KEY (ID)
 );
 
