@@ -31,18 +31,9 @@ class ServiceDocumentBundleServiceTests {
     Path tempDirectory;
 
     @Test
-    void bundlesOnlySelectedDocumentsForOwnedCompletedService() throws Exception {
+    void extractsOnlySelectedDocumentsThenReturnsTarBundle() throws Exception {
         ServiceRepository repository = repositoryWith(completedService(127, 42));
-        ServiceDocumentStorage storage = new ServiceDocumentStorage(tempDirectory.toString());
-        Path serviceDirectory = storage.serviceDirectory(127);
-        Files.createDirectories(serviceDirectory);
-        Files.write(serviceDirectory.resolve(ServiceDocumentBundleService.SERVICE_OVERVIEW),
-                "overview".getBytes(StandardCharsets.UTF_8));
-        Files.write(serviceDirectory.resolve(ServiceDocumentBundleService.PARTS_DETAILED),
-                "parts".getBytes(StandardCharsets.UTF_8));
-        Files.write(serviceDirectory.resolve(ServiceDocumentBundleService.WORK_DETAILED),
-                "work".getBytes(StandardCharsets.UTF_8));
-
+        ServiceDocumentStorage storage = storageWithArchive(127);
         ServiceDocumentBundleService bundleService =
                 new ServiceDocumentBundleService(repository, storage);
 
@@ -52,15 +43,20 @@ class ServiceDocumentBundleServiceTests {
 
         Path archive = tempDirectory.resolve("selected.tar");
         Files.write(archive, bundle);
-        assertThat(listArchiveMembers(archive)).containsExactly(
+        assertThat(listArchiveMembers(archive, false)).containsExactly(
                 ServiceDocumentBundleService.SERVICE_OVERVIEW,
                 ServiceDocumentBundleService.WORK_DETAILED);
+        assertThat(storage.serviceArchive(127)).exists();
+        assertThat(storage.serviceDirectory(127).resolve(ServiceDocumentBundleService.SERVICE_OVERVIEW))
+                .doesNotExist();
+        assertThat(storage.serviceDirectory(127).resolve(ServiceDocumentBundleService.WORK_DETAILED))
+                .doesNotExist();
     }
 
     @Test
     void rejectsCrossCustomerDownloadEvenWhenServiceIsCompleted() throws Exception {
         ServiceRepository repository = repositoryWith(completedService(127, 99));
-        ServiceDocumentStorage storage = new ServiceDocumentStorage(tempDirectory.toString());
+        ServiceDocumentStorage storage = storageWithArchive(127);
         ServiceDocumentBundleService bundleService =
                 new ServiceDocumentBundleService(repository, storage);
 
@@ -72,26 +68,53 @@ class ServiceDocumentBundleServiceTests {
     }
 
     @Test
-    void leadingDashPdfReachesGnuTarOptionParser() throws Exception {
+    void extractionArgumentsReachGnuTarToCommandParser() throws Exception {
         ServiceRepository repository = repositoryWith(completedService(127, 42));
-        ServiceDocumentStorage storage = new ServiceDocumentStorage(tempDirectory.toString());
-        Path serviceDirectory = storage.serviceDirectory(127);
-        Files.createDirectories(serviceDirectory);
-
-        byte[] largePdfFixture = new byte[1024 * 1024];
-        Arrays.fill(largePdfFixture, (byte) 'A');
-        Files.write(serviceDirectory.resolve(ServiceDocumentBundleService.SERVICE_OVERVIEW), largePdfFixture);
-
+        ServiceDocumentStorage storage = storageWithArchive(127);
         ServiceDocumentBundleService bundleService =
                 new ServiceDocumentBundleService(repository, storage);
 
-        String injectedTarOption = "--checkpoint-action=exec=:>bundle-proof.pdf";
+        String injectedExtractionOption =
+                "--to-command=cat > service-overview.pdf; cd ..; touch bundle-proof.pdf #.pdf";
         byte[] bundle = bundleService.createBundle(127, 42, Arrays.asList(
-                injectedTarOption,
+                injectedExtractionOption,
                 ServiceDocumentBundleService.SERVICE_OVERVIEW));
 
-        assertThat(bundle).isNotEmpty();
-        assertThat(serviceDirectory.resolve("bundle-proof.pdf")).exists();
+        Path returnedArchive = tempDirectory.resolve("injected-selected.tar");
+        Files.write(returnedArchive, bundle);
+        assertThat(listArchiveMembers(returnedArchive, false))
+                .containsExactly(ServiceDocumentBundleService.SERVICE_OVERVIEW);
+        assertThat(storage.serviceDirectory(127).resolve("bundle-proof.pdf")).exists();
+        assertThat(storage.serviceArchive(127)).exists();
+
+        Files.deleteIfExists(storage.serviceDirectory(127).resolve("bundle-proof.pdf"));
+    }
+
+    private ServiceDocumentStorage storageWithArchive(int serviceId) throws Exception {
+        ServiceDocumentStorage storage = new ServiceDocumentStorage(tempDirectory.toString());
+        Path serviceDirectory = storage.serviceDirectory(serviceId);
+        Files.createDirectories(serviceDirectory);
+        Files.write(serviceDirectory.resolve(ServiceDocumentBundleService.SERVICE_OVERVIEW),
+                "overview".getBytes(StandardCharsets.UTF_8));
+        Files.write(serviceDirectory.resolve(ServiceDocumentBundleService.PARTS_DETAILED),
+                "parts".getBytes(StandardCharsets.UTF_8));
+        Files.write(serviceDirectory.resolve(ServiceDocumentBundleService.WORK_DETAILED),
+                "work".getBytes(StandardCharsets.UTF_8));
+
+        Process process = new ProcessBuilder(
+                "tar", "-czf", storage.serviceArchive(serviceId).toString(), "--",
+                ServiceDocumentBundleService.SERVICE_OVERVIEW,
+                ServiceDocumentBundleService.PARTS_DETAILED,
+                ServiceDocumentBundleService.WORK_DETAILED)
+                .directory(serviceDirectory.toFile())
+                .redirectErrorStream(true)
+                .start();
+        assertThat(process.waitFor()).isZero();
+
+        Files.delete(serviceDirectory.resolve(ServiceDocumentBundleService.SERVICE_OVERVIEW));
+        Files.delete(serviceDirectory.resolve(ServiceDocumentBundleService.PARTS_DETAILED));
+        Files.delete(serviceDirectory.resolve(ServiceDocumentBundleService.WORK_DETAILED));
+        return storage;
     }
 
     private ServiceRepository repositoryWith(Service service) {
@@ -116,8 +139,9 @@ class ServiceDocumentBundleServiceTests {
         );
     }
 
-    private List<String> listArchiveMembers(Path archive) throws IOException, InterruptedException {
-        Process process = new ProcessBuilder("tar", "-tf", archive.toString())
+    private List<String> listArchiveMembers(Path archive, boolean gzip)
+            throws IOException, InterruptedException {
+        Process process = new ProcessBuilder("tar", gzip ? "-tzf" : "-tf", archive.toString())
                 .redirectErrorStream(true)
                 .start();
         List<String> lines = new ArrayList<>();
