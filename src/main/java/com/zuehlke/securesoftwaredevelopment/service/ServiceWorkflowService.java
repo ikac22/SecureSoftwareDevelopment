@@ -6,6 +6,7 @@ import com.zuehlke.securesoftwaredevelopment.domain.Technician;
 import com.zuehlke.securesoftwaredevelopment.domain.TechnicianAvailability;
 import com.zuehlke.securesoftwaredevelopment.domain.mongo.ServiceDetails;
 import com.zuehlke.securesoftwaredevelopment.repository.ServiceRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -30,6 +31,7 @@ public class ServiceWorkflowService {
     private final ServiceWorkService serviceWorkService;
     private final ServiceDocumentGenerator serviceDocumentGenerator;
 
+    @Autowired
     public ServiceWorkflowService(ServiceRepository serviceRepository,
                                   TechnicianDirectory technicianDirectory,
                                   ServiceWorkService serviceWorkService,
@@ -38,6 +40,12 @@ public class ServiceWorkflowService {
         this.technicianDirectory = technicianDirectory;
         this.serviceWorkService = serviceWorkService;
         this.serviceDocumentGenerator = serviceDocumentGenerator;
+    }
+
+    ServiceWorkflowService(ServiceRepository serviceRepository,
+                           TechnicianDirectory technicianDirectory,
+                           ServiceWorkService serviceWorkService) {
+        this(serviceRepository, technicianDirectory, serviceWorkService, null);
     }
 
     public Service get(int serviceId) {
@@ -124,8 +132,10 @@ public class ServiceWorkflowService {
         if (!serviceRepository.complete(serviceId)) {
             throw invalidTransition();
         }
-        Service completedService = get(serviceId);
-        serviceDocumentGenerator.generate(completedService, details);
+        if (serviceDocumentGenerator != null) {
+            Service completedService = get(serviceId);
+            serviceDocumentGenerator.generate(completedService, details);
+        }
     }
 
     private void validateAssignableStatus(Service service) {
