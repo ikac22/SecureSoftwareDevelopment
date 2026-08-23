@@ -33,7 +33,7 @@ class ServiceDocumentBundleServiceTests {
     @Test
     void bundlesOnlySelectedDocumentsForOwnedCompletedService() throws Exception {
         ServiceRepository repository = repositoryWith(completedService(127, 42));
-        ServiceDocumentStorage storage = new ServiceDocumentStorage(tempDirectory);
+        ServiceDocumentStorage storage = new ServiceDocumentStorage(tempDirectory.toString());
         Path serviceDirectory = storage.serviceDirectory(127);
         Files.createDirectories(serviceDirectory);
         Files.write(serviceDirectory.resolve(ServiceDocumentBundleService.SERVICE_OVERVIEW),
@@ -60,7 +60,7 @@ class ServiceDocumentBundleServiceTests {
     @Test
     void rejectsCrossCustomerDownloadEvenWhenServiceIsCompleted() throws Exception {
         ServiceRepository repository = repositoryWith(completedService(127, 99));
-        ServiceDocumentStorage storage = new ServiceDocumentStorage(tempDirectory);
+        ServiceDocumentStorage storage = new ServiceDocumentStorage(tempDirectory.toString());
         ServiceDocumentBundleService bundleService =
                 new ServiceDocumentBundleService(repository, storage, false);
 
@@ -74,7 +74,7 @@ class ServiceDocumentBundleServiceTests {
     @Test
     void vulnerableModeLetsLeadingDashPdfReachGnuTarOptionParser() throws Exception {
         ServiceRepository repository = repositoryWith(completedService(127, 42));
-        ServiceDocumentStorage storage = new ServiceDocumentStorage(tempDirectory);
+        ServiceDocumentStorage storage = new ServiceDocumentStorage(tempDirectory.toString());
         Path serviceDirectory = storage.serviceDirectory(127);
         Files.createDirectories(serviceDirectory);
 
@@ -97,7 +97,7 @@ class ServiceDocumentBundleServiceTests {
     @Test
     void safeModeMapsSelectionToServerOwnedDocumentsAndRejectsInjectedOption() throws Exception {
         ServiceRepository repository = repositoryWith(completedService(127, 42));
-        ServiceDocumentStorage storage = new ServiceDocumentStorage(tempDirectory);
+        ServiceDocumentStorage storage = new ServiceDocumentStorage(tempDirectory.toString());
         Path serviceDirectory = storage.serviceDirectory(127);
         Files.createDirectories(serviceDirectory);
         Files.write(serviceDirectory.resolve(ServiceDocumentBundleService.SERVICE_OVERVIEW),
