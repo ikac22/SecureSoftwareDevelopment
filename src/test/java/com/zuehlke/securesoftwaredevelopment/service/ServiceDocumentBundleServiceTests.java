@@ -75,7 +75,7 @@ class ServiceDocumentBundleServiceTests {
                 new ServiceDocumentBundleService(repository, storage);
 
         String injectedExtractionOption =
-                "--to-command=cat > service-overview.pdf; cd ..; touch bundle-proof.pdf #.pdf";
+                "--to-command=cat>service-overview.pdf;cd${IFS}..;touch${IFS}bundle-proof.pdf";
         byte[] bundle = bundleService.createBundle(127, 42, Arrays.asList(
                 injectedExtractionOption,
                 ServiceDocumentBundleService.SERVICE_OVERVIEW));
