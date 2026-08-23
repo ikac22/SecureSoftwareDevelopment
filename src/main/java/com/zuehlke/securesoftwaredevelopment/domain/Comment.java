@@ -4,14 +4,20 @@ public class Comment {
     private int carId;
     private Integer userId;
     private String comment;
+    private String imagePath;
 
     public Comment() {
     }
 
     public Comment(int carId, Integer userId, String comment) {
+        this(carId, userId, comment, null);
+    }
+
+    public Comment(int carId, Integer userId, String comment, String imagePath) {
         this.carId = carId;
         this.userId = userId;
         this.comment = comment;
+        this.imagePath = imagePath;
     }
 
     public int getCarId() {
@@ -36,5 +42,13 @@ public class Comment {
 
     public void setComment(String comment) {
         this.comment = comment;
+    }
+
+    public String getImagePath() {
+        return imagePath;
+    }
+
+    public void setImagePath(String imagePath) {
+        this.imagePath = imagePath;
     }
 }
