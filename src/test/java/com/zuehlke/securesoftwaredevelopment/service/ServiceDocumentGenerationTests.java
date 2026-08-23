@@ -9,13 +9,18 @@ import org.apache.pdfbox.text.PDFTextStripper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,7 +33,7 @@ class ServiceDocumentGenerationTests {
     Path tempDirectory;
 
     @Test
-    void generatorCreatesAllThreePdfDocumentsWithServiceData() throws Exception {
+    void generatorPersistsAllThreeDocumentsInsideTarGzAndRemovesLoosePdfs() throws Exception {
         ServiceDocumentStorage storage = new ServiceDocumentStorage(tempDirectory.toString());
         ServiceDocumentGenerator generator = new ServiceDocumentGenerator(storage);
         Service service = completedService(127);
@@ -37,16 +42,30 @@ class ServiceDocumentGenerationTests {
         generator.generate(service, details);
 
         Path serviceDirectory = storage.serviceDirectory(127);
-        Path overview = serviceDirectory.resolve(ServiceDocumentBundleService.SERVICE_OVERVIEW);
-        Path parts = serviceDirectory.resolve(ServiceDocumentBundleService.PARTS_DETAILED);
-        Path work = serviceDirectory.resolve(ServiceDocumentBundleService.WORK_DETAILED);
+        Path persistentArchive = storage.serviceArchive(127);
+        assertThat(persistentArchive).exists().isRegularFile();
+        assertThat(listGzipArchiveMembers(persistentArchive)).containsExactly(
+                ServiceDocumentBundleService.SERVICE_OVERVIEW,
+                ServiceDocumentBundleService.PARTS_DETAILED,
+                ServiceDocumentBundleService.WORK_DETAILED);
 
-        assertThat(overview).exists().isRegularFile();
-        assertThat(parts).exists().isRegularFile();
-        assertThat(work).exists().isRegularFile();
-        assertThat(Files.readAllBytes(overview)).startsWith("%PDF".getBytes("US-ASCII"));
-        assertThat(Files.readAllBytes(parts)).startsWith("%PDF".getBytes("US-ASCII"));
-        assertThat(Files.readAllBytes(work)).startsWith("%PDF".getBytes("US-ASCII"));
+        assertThat(serviceDirectory.resolve(ServiceDocumentBundleService.SERVICE_OVERVIEW)).doesNotExist();
+        assertThat(serviceDirectory.resolve(ServiceDocumentBundleService.PARTS_DETAILED)).doesNotExist();
+        assertThat(serviceDirectory.resolve(ServiceDocumentBundleService.WORK_DETAILED)).doesNotExist();
+
+        Path extracted = tempDirectory.resolve("generated-pdf-check");
+        Files.createDirectories(extracted);
+        Process extraction = new ProcessBuilder("tar", "-xzf", persistentArchive.toString(), "-C", extracted.toString())
+                .redirectErrorStream(true)
+                .start();
+        assertThat(extraction.waitFor()).isZero();
+
+        Path overview = extracted.resolve(ServiceDocumentBundleService.SERVICE_OVERVIEW);
+        Path parts = extracted.resolve(ServiceDocumentBundleService.PARTS_DETAILED);
+        Path work = extracted.resolve(ServiceDocumentBundleService.WORK_DETAILED);
+        assertThat(Files.readAllBytes(overview)).startsWith("%PDF".getBytes(StandardCharsets.US_ASCII));
+        assertThat(Files.readAllBytes(parts)).startsWith("%PDF".getBytes(StandardCharsets.US_ASCII));
+        assertThat(Files.readAllBytes(work)).startsWith("%PDF".getBytes(StandardCharsets.US_ASCII));
 
         assertThat(extractText(overview))
                 .contains("SERVICE OVERVIEW")
@@ -65,7 +84,7 @@ class ServiceDocumentGenerationTests {
     }
 
     @Test
-    void completingServiceTriggersDocumentGenerationAfterSqlTransition() {
+    void completingServiceTriggersDocumentArchivingAfterSqlTransition() {
         ServiceRepository repository = mock(ServiceRepository.class);
         TechnicianDirectory directory = mock(TechnicianDirectory.class);
         ServiceWorkService workService = mock(ServiceWorkService.class);
@@ -85,6 +104,24 @@ class ServiceDocumentGenerationTests {
         verify(workService).prepareForCompletion(127);
         verify(repository).complete(127);
         verify(generator).generate(completed, details);
+    }
+
+    private List<String> listGzipArchiveMembers(Path archive) throws Exception {
+        Process process = new ProcessBuilder("tar", "-tzf", archive.toString())
+                .redirectErrorStream(true)
+                .start();
+        List<String> members = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (!line.trim().isEmpty()) {
+                    members.add(line.trim());
+                }
+            }
+        }
+        assertThat(process.waitFor()).isZero();
+        return members;
     }
 
     private Service completedService(int id) {
