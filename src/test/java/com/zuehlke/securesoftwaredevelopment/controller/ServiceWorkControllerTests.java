@@ -43,7 +43,7 @@ class ServiceWorkControllerTests {
         ArgumentCaptor<Map<String, Object>> captor = ArgumentCaptor.forClass(Map.class);
         verify(serviceWorkService).searchParts(captor.capture());
         assertThat(captor.getValue().get("name")).isInstanceOf(Map.class);
-        assertThat((Map<?, ?>) captor.getValue().get("name")).containsKey("$ne");
+        assertThat(((Map<?, ?>) captor.getValue().get("name")).containsKey("$ne")).isTrue();
     }
 
     @Test

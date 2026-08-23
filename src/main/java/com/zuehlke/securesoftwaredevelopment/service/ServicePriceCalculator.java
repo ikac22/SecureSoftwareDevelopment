@@ -20,7 +20,7 @@ public class ServicePriceCalculator {
 
             for (ServiceDetails.UsedPart usedPart : performedService.getUsedParts()) {
                 BigDecimal quantity = positive(usedPart.getQuantity(), "Part quantity");
-                BigDecimal unitPrice = money(usedPart.getUnitPrice(), "Part unit price");
+                BigDecimal unitPrice = nonNegative(usedPart.getUnitPrice(), "Part unit price");
                 BigDecimal lineTotal = quantity.multiply(unitPrice).setScale(MONEY_SCALE, RoundingMode.HALF_UP);
 
                 usedPart.setQuantity(quantity);
@@ -48,6 +48,13 @@ public class ServicePriceCalculator {
     private BigDecimal positive(BigDecimal value, String field) {
         if (value == null || value.signum() <= 0) {
             throw new IllegalArgumentException(field + " must be greater than zero");
+        }
+        return value.stripTrailingZeros();
+    }
+
+    private BigDecimal nonNegative(BigDecimal value, String field) {
+        if (value == null || value.signum() < 0) {
+            throw new IllegalArgumentException(field + " must be zero or greater");
         }
         return value.stripTrailingZeros();
     }

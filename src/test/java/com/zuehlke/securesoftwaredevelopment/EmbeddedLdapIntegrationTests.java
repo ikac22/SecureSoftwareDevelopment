@@ -12,7 +12,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@SpringBootTest
+@SpringBootTest(properties = "spring.datasource.url=jdbc:h2:mem:${random.uuid}")
 class EmbeddedLdapIntegrationTests {
 
     private static final String PEOPLE_SEARCH_BASE = "ou=people,dc=securecar,dc=test";

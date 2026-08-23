@@ -12,7 +12,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest(properties = "spring.data.mongodb.database=secure-software-development-test")
+@SpringBootTest(properties = {
+        "spring.datasource.url=jdbc:h2:mem:${random.uuid}",
+        "spring.data.mongodb.database=secure-software-development-test"
+})
 class PartCatalogSearchHttpIntegrationTests {
     @Autowired
     private ServiceWorkController serviceWorkController;
