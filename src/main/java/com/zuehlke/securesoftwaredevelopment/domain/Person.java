@@ -8,6 +8,9 @@ public class Person {
     private String address;
     private String partnerCode;
 
+    public Person() {
+    }
+
     public Person(int id, String firstName, String lastName, String personalNumber, String address) {
         this(id, firstName, lastName, personalNumber, address, null);
     }
@@ -25,7 +28,7 @@ public class Person {
         return id;
     }
 
-    public void setId() {
+    public void setId(int id) {
         this.id = id;
     }
 
@@ -57,8 +60,8 @@ public class Person {
         return address;
     }
 
-    public void setAddress(String streetNumber) {
-        this.address = streetNumber;
+    public void setAddress(String address) {
+        this.address = address;
     }
 
     public String getPartnerCode() {
