@@ -93,7 +93,7 @@ class ServiceDocumentBundleControllerTests {
                 "work".getBytes(StandardCharsets.UTF_8));
 
         ServiceDocumentBundleController realController = new ServiceDocumentBundleController(
-                new ServiceDocumentBundleService(repository, storage, false));
+                new ServiceDocumentBundleService(repository, storage));
         User customer = new User(42, "customer", "password");
         Authentication authentication = mock(Authentication.class);
         when(authentication.getPrincipal()).thenReturn(customer);
