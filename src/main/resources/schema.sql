@@ -51,6 +51,7 @@ create table comments
     carId          int          NOT NULL,
     userId         int          NOT NULL,
     comment        varchar(500) NOT NULL,
+    imagePath      varchar(1000),
     PRIMARY KEY (ID)
 );
 
