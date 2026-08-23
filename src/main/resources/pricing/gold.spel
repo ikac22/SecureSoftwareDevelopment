@@ -1,0 +1,7 @@
+T(java.lang.Math).max(
+    #basePrice.doubleValue() * 0.75,
+    (#laborPrice.doubleValue() * (#completedServices >= 8 ? 0.85 : 0.90))
+    + (#partsPrice.doubleValue() * (#partsPrice.doubleValue() > 20000 ? 0.92 : 0.96))
+    - ((${partnerCondition}) ? 1000.0 : 0.0)
+    - (#estimatedDurationMinutes != null && #estimatedDurationMinutes > 180 ? 300.0 : 0.0)
+)
