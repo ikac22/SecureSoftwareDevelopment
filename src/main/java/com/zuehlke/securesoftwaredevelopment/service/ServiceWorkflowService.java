@@ -51,6 +51,13 @@ public class ServiceWorkflowService {
         this(serviceRepository, technicianDirectory, serviceWorkService, null, null);
     }
 
+    ServiceWorkflowService(ServiceRepository serviceRepository,
+                           TechnicianDirectory technicianDirectory,
+                           ServiceWorkService serviceWorkService,
+                           ServiceDocumentGenerator serviceDocumentGenerator) {
+        this(serviceRepository, technicianDirectory, serviceWorkService, serviceDocumentGenerator, null);
+    }
+
     public Service get(int serviceId) {
         return serviceRepository.findById(serviceId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Service not found"));
