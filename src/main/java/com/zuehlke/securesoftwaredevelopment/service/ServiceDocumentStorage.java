@@ -11,11 +11,7 @@ public class ServiceDocumentStorage {
     private final Path root;
 
     public ServiceDocumentStorage(@Value("${app.service-documents.root:service-documents}") String root) {
-        this(Paths.get(root));
-    }
-
-    ServiceDocumentStorage(Path root) {
-        this.root = root.toAbsolutePath().normalize();
+        this.root = Paths.get(root).toAbsolutePath().normalize();
     }
 
     public Path serviceDirectory(int serviceId) {
