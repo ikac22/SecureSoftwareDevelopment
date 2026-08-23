@@ -4,6 +4,7 @@ import com.zuehlke.securesoftwaredevelopment.domain.Service;
 import com.zuehlke.securesoftwaredevelopment.domain.ServiceStatus;
 import com.zuehlke.securesoftwaredevelopment.domain.Technician;
 import com.zuehlke.securesoftwaredevelopment.domain.TechnicianAvailability;
+import com.zuehlke.securesoftwaredevelopment.domain.mongo.ServiceDetails;
 import com.zuehlke.securesoftwaredevelopment.repository.ServiceRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -28,19 +29,26 @@ public class ServiceWorkflowService {
     private final ServiceRepository serviceRepository;
     private final TechnicianDirectory technicianDirectory;
     private final ServiceWorkService serviceWorkService;
-    private ServiceFinalPriceService serviceFinalPriceService;
+    private final ServiceDocumentGenerator serviceDocumentGenerator;
+    private final ServiceFinalPriceService serviceFinalPriceService;
 
+    @Autowired
     public ServiceWorkflowService(ServiceRepository serviceRepository,
                                   TechnicianDirectory technicianDirectory,
-                                  ServiceWorkService serviceWorkService) {
+                                  ServiceWorkService serviceWorkService,
+                                  ServiceDocumentGenerator serviceDocumentGenerator,
+                                  ServiceFinalPriceService serviceFinalPriceService) {
         this.serviceRepository = serviceRepository;
         this.technicianDirectory = technicianDirectory;
         this.serviceWorkService = serviceWorkService;
+        this.serviceDocumentGenerator = serviceDocumentGenerator;
+        this.serviceFinalPriceService = serviceFinalPriceService;
     }
 
-    @Autowired
-    void setServiceFinalPriceService(ServiceFinalPriceService serviceFinalPriceService) {
-        this.serviceFinalPriceService = serviceFinalPriceService;
+    ServiceWorkflowService(ServiceRepository serviceRepository,
+                           TechnicianDirectory technicianDirectory,
+                           ServiceWorkService serviceWorkService) {
+        this(serviceRepository, technicianDirectory, serviceWorkService, null, null);
     }
 
     public Service get(int serviceId) {
@@ -123,12 +131,16 @@ public class ServiceWorkflowService {
     }
 
     public void complete(int serviceId) {
-        serviceWorkService.prepareForCompletion(serviceId);
+        ServiceDetails details = serviceWorkService.prepareForCompletion(serviceId);
         if (serviceFinalPriceService != null) {
-            serviceFinalPriceService.apply(serviceId);
+            details = serviceFinalPriceService.apply(serviceId);
         }
         if (!serviceRepository.complete(serviceId)) {
             throw invalidTransition();
+        }
+        if (serviceDocumentGenerator != null) {
+            Service completedService = get(serviceId);
+            serviceDocumentGenerator.generate(completedService, details);
         }
     }
 
