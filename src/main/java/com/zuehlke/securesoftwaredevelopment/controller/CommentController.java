@@ -26,10 +26,10 @@ public class CommentController {
     }
 
     @PostMapping(value = "/comments", consumes = "multipart/form-data")
-    public ResponseEntity<String> createComment(@RequestParam("carId") int carId,
-                                                @RequestParam("comment") String text,
-                                                @RequestParam(value = "image", required = false) MultipartFile image,
-                                                Authentication authentication) {
+    public ResponseEntity<?> createComment(@RequestParam("carId") int carId,
+                                           @RequestParam("comment") String text,
+                                           @RequestParam(value = "image", required = false) MultipartFile image,
+                                           Authentication authentication) {
         User user = (User) authentication.getPrincipal();
 
         try {
