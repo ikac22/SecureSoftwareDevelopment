@@ -1,5 +1,6 @@
 package com.zuehlke.securesoftwaredevelopment.domain.mongo;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Version;
 import org.springframework.data.mongodb.core.index.Indexed;
@@ -38,6 +39,7 @@ public class ServiceDetails {
         return id;
     }
 
+    @JsonAlias("_id")
     public void setId(String id) {
         this.id = id;
     }

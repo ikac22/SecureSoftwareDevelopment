@@ -1,5 +1,6 @@
 package com.zuehlke.securesoftwaredevelopment.domain.mongo;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -16,9 +17,11 @@ public class PartCatalogItem {
     @Indexed(unique = true)
     private String normalizedKey;
 
+    @Indexed
     private String name;
     private String description;
     private String partNumber;
+    @Indexed
     private String manufacturer;
     private String unit;
     private BigDecimal averageUnitPrice;
@@ -31,6 +34,7 @@ public class PartCatalogItem {
         return id;
     }
 
+    @JsonAlias("_id")
     public void setId(String id) {
         this.id = id;
     }

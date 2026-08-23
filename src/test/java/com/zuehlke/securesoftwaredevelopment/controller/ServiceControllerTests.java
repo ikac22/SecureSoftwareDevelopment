@@ -8,6 +8,7 @@ import com.zuehlke.securesoftwaredevelopment.domain.TechnicianAvailability;
 import com.zuehlke.securesoftwaredevelopment.domain.User;
 import com.zuehlke.securesoftwaredevelopment.repository.ServiceRepository;
 import com.zuehlke.securesoftwaredevelopment.service.ServiceWorkflowService;
+import com.zuehlke.securesoftwaredevelopment.service.ServiceWorkService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -29,13 +30,15 @@ import static org.mockito.Mockito.when;
 class ServiceControllerTests {
     private ServiceRepository serviceRepository;
     private ServiceWorkflowService workflowService;
+    private ServiceWorkService serviceWorkService;
     private ServiceController controller;
 
     @BeforeEach
     void setUp() {
         serviceRepository = mock(ServiceRepository.class);
         workflowService = mock(ServiceWorkflowService.class);
-        controller = new ServiceController(serviceRepository, workflowService);
+        serviceWorkService = mock(ServiceWorkService.class);
+        controller = new ServiceController(serviceRepository, workflowService, serviceWorkService);
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.zuehlke.securesoftwaredevelopment.domain.mongo;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -18,6 +19,7 @@ public class ServiceType {
     @Indexed(unique = true)
     private String normalizedName;
 
+    @Indexed
     private String name;
     private String description;
     private Map<String, Object> attributes = new LinkedHashMap<>();
@@ -32,6 +34,7 @@ public class ServiceType {
         return id;
     }
 
+    @JsonAlias("_id")
     public void setId(String id) {
         this.id = id;
     }

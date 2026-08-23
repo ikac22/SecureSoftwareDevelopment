@@ -36,13 +36,16 @@ class ServiceWorkflowServiceTests {
 
     private ServiceRepository serviceRepository;
     private TechnicianDirectory technicianDirectory;
+    private ServiceWorkService serviceWorkService;
     private ServiceWorkflowService workflowService;
 
     @BeforeEach
     void setUp() {
         serviceRepository = mock(ServiceRepository.class);
         technicianDirectory = mock(TechnicianDirectory.class);
-        workflowService = new ServiceWorkflowService(serviceRepository, technicianDirectory);
+        serviceWorkService = mock(ServiceWorkService.class);
+        workflowService = new ServiceWorkflowService(
+                serviceRepository, technicianDirectory, serviceWorkService);
     }
 
     @Test
@@ -175,6 +178,25 @@ class ServiceWorkflowServiceTests {
         assertThatThrownBy(() -> workflowService.start(1))
                 .isInstanceOfSatisfying(ResponseStatusException.class,
                         exception -> assertThat(exception.getStatus()).isEqualTo(HttpStatus.CONFLICT));
+    }
+
+    @Test
+    void startingServiceCreatesWorkDetails() {
+        when(serviceRepository.start(1)).thenReturn(true);
+
+        workflowService.start(1);
+
+        verify(serviceWorkService).ensureStartedServiceDetails(1);
+    }
+
+    @Test
+    void completingServiceValidatesWorkBeforeSqlTransition() {
+        when(serviceRepository.complete(1)).thenReturn(true);
+
+        workflowService.complete(1);
+
+        verify(serviceWorkService).prepareForCompletion(1);
+        verify(serviceRepository).complete(1);
     }
 
     private Technician technician(String id, String displayName) {
