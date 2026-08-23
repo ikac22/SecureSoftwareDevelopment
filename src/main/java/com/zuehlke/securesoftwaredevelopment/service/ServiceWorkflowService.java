@@ -124,7 +124,9 @@ public class ServiceWorkflowService {
 
     public void complete(int serviceId) {
         serviceWorkService.prepareForCompletion(serviceId);
-        serviceFinalPriceService.apply(serviceId);
+        if (serviceFinalPriceService != null) {
+            serviceFinalPriceService.apply(serviceId);
+        }
         if (!serviceRepository.complete(serviceId)) {
             throw invalidTransition();
         }
