@@ -26,10 +26,14 @@ public class ServiceWorkflowService {
 
     private final ServiceRepository serviceRepository;
     private final TechnicianDirectory technicianDirectory;
+    private final ServiceWorkService serviceWorkService;
 
-    public ServiceWorkflowService(ServiceRepository serviceRepository, TechnicianDirectory technicianDirectory) {
+    public ServiceWorkflowService(ServiceRepository serviceRepository,
+                                  TechnicianDirectory technicianDirectory,
+                                  ServiceWorkService serviceWorkService) {
         this.serviceRepository = serviceRepository;
         this.technicianDirectory = technicianDirectory;
+        this.serviceWorkService = serviceWorkService;
     }
 
     public Service get(int serviceId) {
@@ -108,9 +112,11 @@ public class ServiceWorkflowService {
         if (!serviceRepository.start(serviceId)) {
             throw invalidTransition();
         }
+        serviceWorkService.ensureStartedServiceDetails(serviceId);
     }
 
     public void complete(int serviceId) {
+        serviceWorkService.prepareForCompletion(serviceId);
         if (!serviceRepository.complete(serviceId)) {
             throw invalidTransition();
         }

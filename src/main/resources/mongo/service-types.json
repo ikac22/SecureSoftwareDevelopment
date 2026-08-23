@@ -1,0 +1,72 @@
+[
+  {
+    "_id": "service-type-brakes",
+    "name": "Brake service",
+    "description": "Inspection and servicing of the braking system",
+    "attributes": {
+      "system": "BRAKES",
+      "recommendedIntervalKm": 30000
+    },
+    "averageLaborPrice": 5000.00,
+    "defaultSubServices": [
+      {"templateId": "brakes-front-inspection", "name": "Front brake inspection"},
+      {"templateId": "brakes-rear-inspection", "name": "Rear brake inspection"},
+      {"templateId": "brakes-fluid-check", "name": "Brake fluid check"}
+    ],
+    "defaultParts": [
+      {"catalogPartId": "part-brake-pad-front", "defaultQuantity": 1}
+    ]
+  },
+  {
+    "_id": "service-type-oil-change",
+    "name": "Engine oil and filter replacement",
+    "description": "Replacement of engine oil and oil filter",
+    "attributes": {
+      "system": "ENGINE",
+      "maintenanceType": "PERIODIC"
+    },
+    "averageLaborPrice": 2500.00,
+    "defaultSubServices": [
+      {"templateId": "oil-drain", "name": "Drain old engine oil"},
+      {"templateId": "oil-filter-replace", "name": "Replace oil filter"},
+      {"templateId": "oil-refill", "name": "Refill and verify oil level"}
+    ],
+    "defaultParts": [
+      {"catalogPartId": "part-engine-oil-5w30", "defaultQuantity": 4.5},
+      {"catalogPartId": "part-oil-filter", "defaultQuantity": 1}
+    ]
+  },
+  {
+    "_id": "service-type-tires",
+    "name": "Tire replacement",
+    "description": "Removal, mounting and balancing of tires",
+    "attributes": {
+      "system": "WHEELS"
+    },
+    "averageLaborPrice": 4000.00,
+    "defaultSubServices": [
+      {"templateId": "tires-remove", "name": "Remove existing tires"},
+      {"templateId": "tires-mount", "name": "Mount replacement tires"},
+      {"templateId": "tires-balance", "name": "Balance wheels"}
+    ],
+    "defaultParts": [
+      {"catalogPartId": "part-winter-tire-205-55-r16", "defaultQuantity": 4}
+    ]
+  },
+  {
+    "_id": "service-type-battery",
+    "name": "Battery replacement",
+    "description": "Battery diagnostics and replacement",
+    "attributes": {
+      "system": "ELECTRICAL"
+    },
+    "averageLaborPrice": 1800.00,
+    "defaultSubServices": [
+      {"templateId": "battery-test", "name": "Test charging system"},
+      {"templateId": "battery-replace", "name": "Replace battery"}
+    ],
+    "defaultParts": [
+      {"catalogPartId": "part-battery-60ah", "defaultQuantity": 1}
+    ]
+  }
+]

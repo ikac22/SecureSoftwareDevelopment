@@ -17,3 +17,38 @@ Za čas "Alati za statičku i dinamičku analizu"
 
 Za čas "Autentifikacija"
 * Neki od TOTP autentifikatora za mobilne uređaje (Google/Microsoft Authenticator, FreeOTP, OTP Auth...)
+
+## MongoDB katalog servisa
+
+Aplikacija koristi Spring Boot embedded MongoDB preko Flapdoodle biblioteke. Zaseban MongoDB server
+ili Docker kontejner nisu potrebni za podrazumevano lokalno pokretanje. Pri prvom pokretanju Flapdoodle
+može preuzeti MongoDB binary za trenutnu platformu.
+
+Mongo se pokreće na nasumičnom slobodnom portu, a početni podaci se idempotentno učitavaju iz:
+
+* `src/main/resources/mongo/parts.json`;
+* `src/main/resources/mongo/service-types.json`;
+* `src/main/resources/mongo/service-details.json`.
+
+`data.sql` sadrži SQL service zapise sa stabilnim ID-jevima koje referencira `service-details.json`.
+Seed se može isključiti za eksternu ili trajnu MongoDB bazu:
+
+```properties
+app.mongodb.seed-enabled=false
+spring.data.mongodb.uri=mongodb://localhost:27017/secure-software-development
+```
+
+Namerno ranjiva demonstraciona pretraga kataloga delova nalazi se na
+`POST /api/catalog/parts/search`. Normalan filter izgleda ovako:
+
+```json
+{"filters":{"name":"Front brake pad set"}}
+```
+
+Operatorski filter kojim se u izolovanom nastavnom okruženju demonstrira proširen rezultat:
+
+```json
+{"filters":{"name":{"$ne":null}}}
+```
+
+Automatski testovi verifikuju proširen rezultat bez pokušaja da iscrpe memoriju ili obore JVM.

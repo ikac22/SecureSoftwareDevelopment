@@ -41,10 +41,10 @@ class ServiceRepositoryTests {
         request.setCarModel("Honda Civic");
         request.setDescription("Replace brake pads");
 
-        serviceRepository.insertScheduledService(2, request);
+        serviceRepository.insertScheduledService(3, request);
 
-        assertThat(serviceRepository.findByPersonId(2)).hasSize(1);
-        Service stored = serviceRepository.findByPersonId(2).get(0);
+        assertThat(serviceRepository.findByPersonId(3)).hasSize(1);
+        Service stored = serviceRepository.findByPersonId(3).get(0);
         assertThat(stored.getDescription()).isEqualTo("Replace brake pads");
         assertThat(stored.getDate()).isNull();
         assertThat(stored.getTime()).isNull();
@@ -55,15 +55,17 @@ class ServiceRepositoryTests {
         ScheduleService request = new ScheduleService();
         request.setCarModel("Honda Civic");
         request.setDescription("Replace brake pads");
-        serviceRepository.insertScheduledService(2, request);
+        serviceRepository.insertScheduledService(3, request);
 
         assertThat(serviceRepository.findByPersonId(1))
                 .extracting(Service::getCarModel)
-                .containsExactly("Mercedes S 560");
+                .containsExactly("Mercedes S 560", "Ford Focus");
         assertThat(serviceRepository.findByPersonId(2))
                 .extracting(Service::getCarModel)
                 .containsExactly("Honda Civic");
-        assertThat(serviceRepository.findByPersonId(3)).isEmpty();
+        assertThat(serviceRepository.findByPersonId(3))
+                .extracting(Service::getCarModel)
+                .containsExactly("Honda Civic");
     }
 
     @Test
@@ -117,11 +119,11 @@ class ServiceRepositoryTests {
     @Test
     void completedServiceDoesNotRemainAnActiveAssignment() {
         assertThat(serviceRepository.assignTechnician(
-                1, "marko.markovic", SERVICE_DATE, SERVICE_TIME, 90)).isTrue();
+                1, "test.technician", SERVICE_DATE, SERVICE_TIME, 90)).isTrue();
         assertThat(serviceRepository.start(1)).isTrue();
         assertThat(serviceRepository.cancel(1)).isFalse();
         assertThat(serviceRepository.complete(1)).isTrue();
 
-        assertThat(serviceRepository.findActiveAssignments("marko.markovic", -1)).isEmpty();
+        assertThat(serviceRepository.findActiveAssignments("test.technician", -1)).isEmpty();
     }
 }

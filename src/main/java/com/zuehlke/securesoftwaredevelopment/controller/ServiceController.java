@@ -6,6 +6,7 @@ import com.zuehlke.securesoftwaredevelopment.domain.TechnicianAvailability;
 import com.zuehlke.securesoftwaredevelopment.domain.User;
 import com.zuehlke.securesoftwaredevelopment.repository.ServiceRepository;
 import com.zuehlke.securesoftwaredevelopment.service.ServiceWorkflowService;
+import com.zuehlke.securesoftwaredevelopment.service.ServiceWorkService;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -27,11 +28,14 @@ import java.util.List;
 public class ServiceController {
     private final ServiceRepository serviceRepository;
     private final ServiceWorkflowService serviceWorkflowService;
+    private final ServiceWorkService serviceWorkService;
 
     public ServiceController(ServiceRepository serviceRepository,
-                             ServiceWorkflowService serviceWorkflowService) {
+                             ServiceWorkflowService serviceWorkflowService,
+                             ServiceWorkService serviceWorkService) {
         this.serviceRepository = serviceRepository;
         this.serviceWorkflowService = serviceWorkflowService;
+        this.serviceWorkService = serviceWorkService;
     }
 
     @GetMapping("/scheduled-services")
@@ -64,7 +68,12 @@ public class ServiceController {
 
     @GetMapping("/services/{id}")
     public String showService(@PathVariable int id, Model model) {
-        model.addAttribute("service", serviceWorkflowService.get(id));
+        Service service = serviceWorkflowService.get(id);
+        model.addAttribute("service", service);
+        if (service.getServiceStatus() == com.zuehlke.securesoftwaredevelopment.domain.ServiceStatus.IN_PROGRESS
+                || service.getServiceStatus() == com.zuehlke.securesoftwaredevelopment.domain.ServiceStatus.COMPLETED) {
+            model.addAttribute("serviceDetails", serviceWorkService.getForDisplay(id));
+        }
         return "service-details";
     }
 

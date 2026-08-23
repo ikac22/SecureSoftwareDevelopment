@@ -6,8 +6,10 @@ import com.zuehlke.securesoftwaredevelopment.domain.ServiceStatus;
 import com.zuehlke.securesoftwaredevelopment.domain.Technician;
 import com.zuehlke.securesoftwaredevelopment.domain.TechnicianAvailability;
 import com.zuehlke.securesoftwaredevelopment.domain.User;
+import com.zuehlke.securesoftwaredevelopment.domain.mongo.ServiceDetails;
 import com.zuehlke.securesoftwaredevelopment.repository.ServiceRepository;
 import com.zuehlke.securesoftwaredevelopment.service.ServiceWorkflowService;
+import com.zuehlke.securesoftwaredevelopment.service.ServiceWorkService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -23,19 +25,22 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class ServiceControllerTests {
     private ServiceRepository serviceRepository;
     private ServiceWorkflowService workflowService;
+    private ServiceWorkService serviceWorkService;
     private ServiceController controller;
 
     @BeforeEach
     void setUp() {
         serviceRepository = mock(ServiceRepository.class);
         workflowService = mock(ServiceWorkflowService.class);
-        controller = new ServiceController(serviceRepository, workflowService);
+        serviceWorkService = mock(ServiceWorkService.class);
+        controller = new ServiceController(serviceRepository, workflowService, serviceWorkService);
     }
 
     @Test
@@ -82,6 +87,33 @@ class ServiceControllerTests {
 
         assertThat(controller.showService(1, model)).isEqualTo("service-details");
         assertThat(model.get("service")).isEqualTo(service);
+        verify(serviceWorkService, never()).getForDisplay(1);
+    }
+
+    @Test
+    void detailsPageLoadsEditableWorkForInProgressService() {
+        Service service = service(ServiceStatus.IN_PROGRESS);
+        ServiceDetails details = new ServiceDetails(1);
+        when(workflowService.get(1)).thenReturn(service);
+        when(serviceWorkService.getForDisplay(1)).thenReturn(details);
+        ConcurrentModel model = new ConcurrentModel();
+
+        assertThat(controller.showService(1, model)).isEqualTo("service-details");
+        assertThat(model.get("serviceDetails")).isSameAs(details);
+        verify(serviceWorkService).getForDisplay(1);
+    }
+
+    @Test
+    void detailsPageLoadsReadOnlyWorkForCompletedService() {
+        Service service = service(ServiceStatus.COMPLETED);
+        ServiceDetails details = new ServiceDetails(1);
+        when(workflowService.get(1)).thenReturn(service);
+        when(serviceWorkService.getForDisplay(1)).thenReturn(details);
+        ConcurrentModel model = new ConcurrentModel();
+
+        assertThat(controller.showService(1, model)).isEqualTo("service-details");
+        assertThat(model.get("serviceDetails")).isSameAs(details);
+        verify(serviceWorkService).getForDisplay(1);
     }
 
     @Test
