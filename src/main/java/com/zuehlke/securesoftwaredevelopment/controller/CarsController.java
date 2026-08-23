@@ -8,11 +8,11 @@ import com.zuehlke.securesoftwaredevelopment.repository.PersonRepository;
 import com.zuehlke.securesoftwaredevelopment.service.CarImageStorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.Resource;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -63,7 +63,10 @@ public class CarsController {
 
         for (Comment comment : comments) {
             Person person = userRepository.get(comment.getUserId());
-            commentList.add(new ViewComment(person.getFirstName() + " " + person.getLastName(), comment.getComment()));
+            commentList.add(new ViewComment(
+                    person.getFirstName() + " " + person.getLastName(),
+                    comment.getComment(),
+                    comment.getImagePath()));
         }
 
         model.addAttribute("comments", commentList);
@@ -71,24 +74,16 @@ public class CarsController {
         return "car";
     }
 
+    @GetMapping("/comment-images/{fileName:.+}")
+    @ResponseBody
+    public ResponseEntity<Resource> showCommentImage(@PathVariable String fileName) {
+        return ResponseEntity.ok(carImageStorageService.loadForDisplay(fileName));
+    }
+
     @PostMapping("/cars/{id}")
     public String editCar(@PathVariable("id") int id, Car car) throws SQLException {
         carRepository.update(id, car);
         return "redirect:/cars?id=" + id;
-    }
-
-    @PostMapping("/cars/{id}/comment-image")
-    public String uploadCommentImage(@PathVariable("id") int id,
-                                     @RequestParam("image") MultipartFile image,
-                                     RedirectAttributes redirectAttributes) {
-        try {
-            String storedPath = carImageStorageService.store(image);
-            redirectAttributes.addFlashAttribute("imageUploaded", true);
-            redirectAttributes.addFlashAttribute("imagePath", storedPath);
-        } catch (RuntimeException exception) {
-            redirectAttributes.addFlashAttribute("imageUploadError", exception.getMessage());
-        }
-        return "redirect:/cars?id=" + id + "#car-comments";
     }
 
     @GetMapping("/buy-car/{id}")
