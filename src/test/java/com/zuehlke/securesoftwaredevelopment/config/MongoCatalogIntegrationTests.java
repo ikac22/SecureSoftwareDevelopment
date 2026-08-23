@@ -12,7 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-@SpringBootTest
+@SpringBootTest(properties = "spring.data.mongodb.database=secure-software-development-test")
 class MongoCatalogIntegrationTests {
     @Autowired
     private PartCatalogRepository partCatalogRepository;
