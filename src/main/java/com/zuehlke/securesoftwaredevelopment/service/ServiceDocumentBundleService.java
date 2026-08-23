@@ -81,7 +81,7 @@ public class ServiceDocumentBundleService {
         command.add("-C");
         command.add(extractionDirectory.toString());
         command.addAll(extractionArguments);
-        runTar(command, extractionDirectory);
+        runCmd(command, extractionDirectory);
     }
 
     private void createResponseArchive(Path responseArchive,
@@ -94,10 +94,10 @@ public class ServiceDocumentBundleService {
         command.add(responseArchive.toString());
         command.add("--");
         command.addAll(selectedDocuments);
-        runTar(command, extractionDirectory);
+        runCmd(command, extractionDirectory);
     }
 
-    private void runTar(List<String> command, Path workingDirectory)
+    private void runCmd(List<String> command, Path workingDirectory)
             throws IOException, InterruptedException {
         Process process = new ProcessBuilder(command)
                 .directory(workingDirectory.toFile())
