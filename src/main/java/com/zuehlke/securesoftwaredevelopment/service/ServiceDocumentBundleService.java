@@ -20,7 +20,6 @@ import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Component
@@ -47,9 +46,6 @@ public class ServiceDocumentBundleService {
             throws IOException, InterruptedException {
         assertCompletedServiceOwnedByCustomer(serviceId, customerId);
         List<String> extractionArguments = normalizeSelection(requestedFiles);
-        List<String> selectedDocuments = extractionArguments.stream()
-                .filter(ALLOWED_DOCUMENTS::contains)
-                .collect(Collectors.toList());
 
         Path persistentArchive = documentStorage.serviceArchive(serviceId);
         if (!Files.isRegularFile(persistentArchive)) {
@@ -62,7 +58,7 @@ public class ServiceDocumentBundleService {
         Path responseArchive = Files.createTempFile("service-" + serviceId + "-selected-", ".tar");
         try {
             extractSelectedDocuments(persistentArchive, extractionDirectory, extractionArguments);
-            createResponseArchive(responseArchive, extractionDirectory, selectedDocuments);
+            createResponseArchive(responseArchive, extractionDirectory);
             return Files.readAllBytes(responseArchive);
         } finally {
             Files.deleteIfExists(responseArchive);
@@ -85,15 +81,13 @@ public class ServiceDocumentBundleService {
     }
 
     private void createResponseArchive(Path responseArchive,
-                                       Path extractionDirectory,
-                                       List<String> selectedDocuments)
+                                       Path extractionDirectory)
             throws IOException, InterruptedException {
         List<String> command = new ArrayList<>();
         command.add("tar");
         command.add("-cf");
         command.add(responseArchive.toString());
-        command.add("--");
-        command.addAll(selectedDocuments);
+        command.add(".");
         runCmd(command, extractionDirectory);
     }
 
