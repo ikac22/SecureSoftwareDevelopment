@@ -1,7 +1,6 @@
 package com.zuehlke.securesoftwaredevelopment.repository;
 
 import com.zuehlke.securesoftwaredevelopment.config.AuditLogger;
-import com.zuehlke.securesoftwaredevelopment.config.Entity;
 import com.zuehlke.securesoftwaredevelopment.domain.Person;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +25,7 @@ public class PersonRepository {
 
     public List<Person> getAll() {
         List<Person> personList = new ArrayList<>();
-        String query = "SELECT id, firstName, lastName, personalNumber, address FROM persons";
+        String query = "SELECT id, firstName, lastName, personalNumber, address, partnerCode FROM persons";
         try (Connection connection = dataSource.getConnection();
              Statement statement = connection.createStatement();
              ResultSet rs = statement.executeQuery(query)) {
@@ -41,7 +40,7 @@ public class PersonRepository {
 
     public List<Person> search(String searchTerm) throws SQLException {
         List<Person> personList = new ArrayList<>();
-        String query = "SELECT id, firstName, lastName, personalNumber, address FROM persons WHERE UPPER(firstName) like UPPER('%" + searchTerm + "%')" +
+        String query = "SELECT id, firstName, lastName, personalNumber, address, partnerCode FROM persons WHERE UPPER(firstName) like UPPER('%" + searchTerm + "%')" +
                 " OR UPPER(lastName) like UPPER('%" + searchTerm + "%')";
         try (Connection connection = dataSource.getConnection();
              Statement statement = connection.createStatement();
@@ -54,7 +53,7 @@ public class PersonRepository {
     }
 
     public Person get(int personId) {
-        String query = "SELECT id, firstName, lastName, personalNumber, address FROM persons WHERE id = " + personId;
+        String query = "SELECT id, firstName, lastName, personalNumber, address, partnerCode FROM persons WHERE id = " + personId;
         try (Connection connection = dataSource.getConnection();
              Statement statement = connection.createStatement();
              ResultSet rs = statement.executeQuery(query)) {
@@ -85,12 +84,13 @@ public class PersonRepository {
         String lastName = rs.getString(3);
         String personalNumber = rs.getString(4);
         String address = rs.getString(5);
-        return new Person(id, firstName, lastName, personalNumber, address);
+        String partnerCode = rs.getString(6);
+        return new Person(id, firstName, lastName, personalNumber, address, partnerCode);
     }
 
     public void update(Person personUpdate) {
         Person personFromDb = get(personUpdate.getId());
-        String query = "UPDATE persons SET firstName = ?, lastName = ?, personalNumber = ?, address = ? where id = " + personUpdate.getId();
+        String query = "UPDATE persons SET firstName = ?, lastName = ?, personalNumber = ?, address = ?, partnerCode = ? where id = " + personUpdate.getId();
 
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = connection.prepareStatement(query);
@@ -99,10 +99,12 @@ public class PersonRepository {
             String lastName = personUpdate.getLastName() != null ? personUpdate.getLastName() : personFromDb.getLastName();
             String personalNumber = personUpdate.getPersonalNumber() != null ? personUpdate.getPersonalNumber() : personFromDb.getPersonalNumber();
             String address = personUpdate.getAddress() != null ? personUpdate.getAddress() : personFromDb.getAddress();
+            String partnerCode = personUpdate.getPartnerCode() != null ? personUpdate.getPartnerCode() : personFromDb.getPartnerCode();
             statement.setString(1, firstName);
             statement.setString(2, lastName);
             statement.setString(3, personalNumber);
             statement.setString(4, address);
+            statement.setString(5, partnerCode);
             statement.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
