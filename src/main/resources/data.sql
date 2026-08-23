@@ -48,5 +48,10 @@ insert into role_to_permissions(roleId, permissionId)
 values (1, 1),
        (2, 1);
 
-insert into services(personId, carModel, description)
-values (1, 'Mercedes S 560', 'Regular maintenance');
+insert into services(id, personId, date, carModel, description, time, serviceStatus,
+                     technician, estimatedDurationMinutes, completedAt)
+values (1, 1, null, 'Mercedes S 560', 'Regular maintenance', null, 'SCHEDULED', null, null, null),
+       (2, 2, '2026-08-23', 'Honda Civic', 'Brake noise and reduced braking performance',
+        '09:00:00', 'IN_PROGRESS', 'marko.markovic', 90, null),
+       (3, 1, '2026-08-22', 'Ford Focus', 'Oil and filter replacement',
+        '11:00:00', 'COMPLETED', 'ana.anic', 60, '2026-08-22 12:00:00');

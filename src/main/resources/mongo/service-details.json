@@ -1,0 +1,98 @@
+[
+  {
+    "_id": "service-details-2",
+    "serviceId": 2,
+    "performedServices": [
+      {
+        "itemId": "performed-service-2-brakes",
+        "catalogServiceId": "service-type-brakes",
+        "name": "Brake service",
+        "description": "Inspection and servicing of the braking system",
+        "attributes": {
+          "system": "BRAKES",
+          "recommendedIntervalKm": 30000
+        },
+        "laborPrice": 4200.00,
+        "subServices": [
+          {"itemId": "performed-subservice-2-front", "name": "Front brake inspection"},
+          {"itemId": "performed-subservice-2-fluid", "name": "Brake fluid check"}
+        ],
+        "usedParts": [
+          {
+            "itemId": "used-part-2-brake-pad",
+            "catalogPartId": "part-brake-pad-front",
+            "name": "Front brake pad set",
+            "description": "Brake pad set for the front axle",
+            "partNumber": "BP-FRONT-01",
+            "manufacturer": "Example Parts",
+            "unit": "SET",
+            "attributes": {
+              "axle": "FRONT",
+              "material": "CERAMIC"
+            },
+            "quantity": 1,
+            "unitPrice": 7200.00,
+            "comment": "Packaging was opened, discounted unit price"
+          }
+        ],
+        "comment": "Rear brakes did not require replacement"
+      }
+    ]
+  },
+  {
+    "_id": "service-details-3",
+    "serviceId": 3,
+    "performedServices": [
+      {
+        "itemId": "performed-service-3-oil",
+        "catalogServiceId": "service-type-oil-change",
+        "name": "Engine oil and filter replacement",
+        "description": "Replacement of engine oil and oil filter",
+        "attributes": {
+          "system": "ENGINE",
+          "maintenanceType": "PERIODIC"
+        },
+        "laborPrice": 2500.00,
+        "subServices": [
+          {"itemId": "performed-subservice-3-drain", "name": "Drain old engine oil"},
+          {"itemId": "performed-subservice-3-filter", "name": "Replace oil filter"},
+          {"itemId": "performed-subservice-3-refill", "name": "Refill and verify oil level"}
+        ],
+        "usedParts": [
+          {
+            "itemId": "used-part-3-oil",
+            "catalogPartId": "part-engine-oil-5w30",
+            "name": "Engine oil 5W-30",
+            "description": "Fully synthetic engine oil",
+            "partNumber": "OIL-5W30",
+            "manufacturer": "Example Lubricants",
+            "unit": "LITER",
+            "attributes": {
+              "viscosity": "5W-30",
+              "synthetic": true
+            },
+            "quantity": 4.5,
+            "unitPrice": 1400.00,
+            "comment": ""
+          },
+          {
+            "itemId": "used-part-3-filter",
+            "catalogPartId": "part-oil-filter",
+            "name": "Oil filter",
+            "description": "Standard replacement engine oil filter",
+            "partNumber": "FILTER-OIL-01",
+            "manufacturer": "Example Filters",
+            "unit": "PIECE",
+            "attributes": {
+              "filterType": "SPIN_ON"
+            },
+            "quantity": 1,
+            "unitPrice": 1200.00,
+            "comment": ""
+          }
+        ],
+        "comment": "Oil level verified after a short engine run"
+      }
+    ]
+  }
+]
