@@ -6,7 +6,6 @@ import com.zuehlke.securesoftwaredevelopment.domain.mongo.ServiceDetails;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StreamUtils;
 
@@ -23,21 +22,60 @@ public class ServicePricingPolicyEvaluator {
                                int completedServices) {
         PricingValues pricing = pricingValues(details);
         PricingTier tier = PricingTier.fromCompletedServices(completedServices);
-        String template = loadTemplate(tier);
-        String expressionText = renderExpression(template, customer == null ? null : customer.getPartnerCode());
+        return evaluate(tier,
+                pricing.laborPrice,
+                pricing.partsPrice,
+                service == null || service.getEstimatedDurationMinutes() == null
+                        ? 0 : service.getEstimatedDurationMinutes(),
+                completedServices,
+                customer == null ? null : customer.getPartnerCode());
+    }
 
-        StandardEvaluationContext context = new StandardEvaluationContext();
-        context.setVariable("basePrice", pricing.basePrice);
-        context.setVariable("laborPrice", pricing.laborPrice);
-        context.setVariable("partsPrice", pricing.partsPrice);
-        context.setVariable("partsCount", pricing.partsCount);
-        context.setVariable("completedServices", completedServices);
-        context.setVariable("carModel", service == null ? null : service.getCarModel());
-        context.setVariable("estimatedDurationMinutes",
-                service == null ? null : service.getEstimatedDurationMinutes());
+    public BigDecimal evaluatePreview(String tierName,
+                                      BigDecimal laborPrice,
+                                      BigDecimal partsPrice,
+                                      int estimatedDurationMinutes,
+                                      int completedServices,
+                                      String partnerCode) {
+        PricingTier tier;
+        try {
+            tier = PricingTier.valueOf(tierName == null ? "" : tierName.trim().toUpperCase());
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("Unknown loyalty tier");
+        }
+        return evaluate(tier, laborPrice, partsPrice, estimatedDurationMinutes,
+                completedServices, partnerCode);
+    }
+
+    private BigDecimal evaluate(PricingTier tier,
+                                BigDecimal laborPrice,
+                                BigDecimal partsPrice,
+                                int estimatedDurationMinutes,
+                                int completedServices,
+                                String partnerCode) {
+        BigDecimal safeLaborPrice = nonNegative(laborPrice, "Labor price");
+        BigDecimal safePartsPrice = nonNegative(partsPrice, "Parts price");
+        if (estimatedDurationMinutes < 0) {
+            throw new IllegalArgumentException("Estimated duration cannot be negative");
+        }
+        if (completedServices < 0) {
+            throw new IllegalArgumentException("Completed services cannot be negative");
+        }
+
+        BigDecimal basePrice = safeLaborPrice.add(safePartsPrice);
+        String template = loadTemplate(tier);
+        String expressionText = renderExpression(
+                template,
+                basePrice,
+                safeLaborPrice,
+                safePartsPrice,
+                estimatedDurationMinutes,
+                completedServices,
+                partnerCode
+        );
 
         Expression expression = parser.parseExpression(expressionText);
-        Object result = expression.getValue(context);
+        Object result = expression.getValue();
         BigDecimal finalPrice = monetaryValue(result);
         if (finalPrice.signum() < 0) {
             throw new IllegalStateException("Pricing policy returned a negative price");
@@ -45,10 +83,24 @@ public class ServicePricingPolicyEvaluator {
         return finalPrice.setScale(2, RoundingMode.HALF_UP);
     }
 
-    String renderExpression(String template, String partnerCode) {
+    String renderExpression(String template,
+                            BigDecimal basePrice,
+                            BigDecimal laborPrice,
+                            BigDecimal partsPrice,
+                            int estimatedDurationMinutes,
+                            int completedServices,
+                            String partnerCode) {
         String persistedCode = partnerCode == null ? "" : partnerCode;
-        String partnerCondition = "'" + persistedCode + "' == 'FLEET-10'";
-        return template.replace("${partnerCondition}", partnerCondition);
+
+        // Pricing resources are templates. Their values are deliberately materialized
+        // by string replacement before the resulting expression is parsed.
+        return template
+                .replace("${basePrice}", basePrice.toPlainString())
+                .replace("${laborPrice}", laborPrice.toPlainString())
+                .replace("${partsPrice}", partsPrice.toPlainString())
+                .replace("${estimatedDurationMinutes}", Integer.toString(estimatedDurationMinutes))
+                .replace("${completedServices}", Integer.toString(completedServices))
+                .replace("${partnerCode}", "'" + persistedCode + "'");
     }
 
     private String loadTemplate(PricingTier tier) {
@@ -64,7 +116,6 @@ public class ServicePricingPolicyEvaluator {
     private PricingValues pricingValues(ServiceDetails details) {
         BigDecimal laborPrice = BigDecimal.ZERO;
         BigDecimal partsPrice = BigDecimal.ZERO;
-        int partsCount = 0;
 
         for (ServiceDetails.PerformedService performedService : details.getPerformedServices()) {
             if (performedService.getLaborPrice() != null) {
@@ -76,10 +127,16 @@ public class ServicePricingPolicyEvaluator {
                 } else if (usedPart.getQuantity() != null && usedPart.getUnitPrice() != null) {
                     partsPrice = partsPrice.add(usedPart.getQuantity().multiply(usedPart.getUnitPrice()));
                 }
-                partsCount++;
             }
         }
-        return new PricingValues(laborPrice, partsPrice, partsCount);
+        return new PricingValues(laborPrice, partsPrice);
+    }
+
+    private BigDecimal nonNegative(BigDecimal value, String field) {
+        if (value == null || value.signum() < 0) {
+            throw new IllegalArgumentException(field + " must be zero or greater");
+        }
+        return value;
     }
 
     private BigDecimal monetaryValue(Object value) {
@@ -111,14 +168,10 @@ public class ServicePricingPolicyEvaluator {
     private static class PricingValues {
         private final BigDecimal laborPrice;
         private final BigDecimal partsPrice;
-        private final BigDecimal basePrice;
-        private final int partsCount;
 
-        private PricingValues(BigDecimal laborPrice, BigDecimal partsPrice, int partsCount) {
+        private PricingValues(BigDecimal laborPrice, BigDecimal partsPrice) {
             this.laborPrice = laborPrice;
             this.partsPrice = partsPrice;
-            this.basePrice = laborPrice.add(partsPrice);
-            this.partsCount = partsCount;
         }
     }
 }
