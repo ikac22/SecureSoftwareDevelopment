@@ -43,26 +43,21 @@
     <div class="form-group" th:each="comment,iter : ${comments}">
         <b th:text="${comment.personName}"></b>
         <div class="form-control" th:id="${iter.index}" th:utext="${comment.comment}" disabled></div>
+        <div class="mt-2" th:if="${comment.imagePath != null}">
+            <img th:src="@{'/comment-images/' + ${comment.imagePath}}"
+                 alt="Comment image" class="img-fluid rounded" style="max-height: 320px;">
+        </div>
     </div>
+
     <div class="form-group">
         <label for="addComment">Add comment</label>
         <textarea class="form-control" id="addComment" rows="3" placeholder="Comment..."></textarea>
-        <button id="createComment" class="btn btn-primary mt-2">Create comment</button>
-    </div>
-
-    <div class="form-group mt-4">
-        <h3>Add a car photo</h3>
-        <p class="text-muted">Attach a photo that can be referenced from the car discussion.</p>
-        <div class="alert alert-success" th:if="${imageUploaded}">
-            Image uploaded successfully.
+        <div class="mt-2">
+            <label for="commentImage">Attach image (optional)</label>
+            <input type="file" id="commentImage" name="image" class="form-control-file" accept="image/*">
         </div>
-        <div class="alert alert-danger" th:if="${imageUploadError}" th:text="${imageUploadError}"></div>
-        <form method="POST" enctype="multipart/form-data" th:action="@{'/cars/' + ${car.id} + '/comment-image'}">
-            <div class="form-group">
-                <input type="file" id="commentImage" name="image" class="form-control-file" accept="image/*" required>
-            </div>
-            <button type="submit" class="btn btn-secondary">Upload photo</button>
-        </form>
+        <div id="commentError" class="alert alert-danger mt-2" style="display: none;"></div>
+        <button id="createComment" class="btn btn-primary mt-2">Create comment</button>
     </div>
 
     <script th:inline="javascript">
@@ -73,17 +68,25 @@
         window.addEventListener('load', function () {
             document.getElementById("createComment").addEventListener("click", function () {
                 const comment = document.getElementById("addComment").value;
+                const image = document.getElementById("commentImage").files[0];
+                const formData = new FormData();
+                formData.append('carId', carId);
+                formData.append('comment', comment);
+                if (image) {
+                    formData.append('image', image);
+                }
 
                 fetch('/comments', {
                     method: 'POST',
-                    body: JSON.stringify({
-                        carId: carId,
-                        comment: comment
-                    }),
-                    headers: {
-                        'Content-Type': 'application/json'
+                    body: formData
+                }).then(async function (response) {
+                    if (!response.ok) {
+                        const error = await response.text();
+                        const errorBox = document.getElementById("commentError");
+                        errorBox.textContent = error;
+                        errorBox.style.display = 'block';
+                        return;
                     }
-                }).then(function () {
                     window.location.reload();
                 });
             });
