@@ -77,20 +77,13 @@ class ServiceDocumentBundleControllerTests {
     }
 
     @Test
-    void downloadRunsControllerServiceTarFlowAndReturnsSelectedDocuments() throws Exception {
+    void downloadRunsControllerExtractionAndRebundleFlow() throws Exception {
         Service completedService = completedService(127, 42);
         ServiceRepository repository = mock(ServiceRepository.class);
         when(repository.findById(127)).thenReturn(Optional.of(completedService));
 
         ServiceDocumentStorage storage = new ServiceDocumentStorage(tempDirectory.toString());
-        Path serviceDirectory = storage.serviceDirectory(127);
-        Files.createDirectories(serviceDirectory);
-        Files.write(serviceDirectory.resolve(ServiceDocumentBundleService.SERVICE_OVERVIEW),
-                "overview".getBytes(StandardCharsets.UTF_8));
-        Files.write(serviceDirectory.resolve(ServiceDocumentBundleService.PARTS_DETAILED),
-                "parts".getBytes(StandardCharsets.UTF_8));
-        Files.write(serviceDirectory.resolve(ServiceDocumentBundleService.WORK_DETAILED),
-                "work".getBytes(StandardCharsets.UTF_8));
+        createPersistentArchive(storage, 127);
 
         ServiceDocumentBundleController realController = new ServiceDocumentBundleController(
                 new ServiceDocumentBundleService(repository, storage));
@@ -115,6 +108,11 @@ class ServiceDocumentBundleControllerTests {
         assertThat(listArchiveMembers(returnedArchive)).containsExactly(
                 ServiceDocumentBundleService.SERVICE_OVERVIEW,
                 ServiceDocumentBundleService.WORK_DETAILED);
+        assertThat(storage.serviceArchive(127)).exists();
+        assertThat(storage.serviceDirectory(127).resolve(ServiceDocumentBundleService.SERVICE_OVERVIEW))
+                .doesNotExist();
+        assertThat(storage.serviceDirectory(127).resolve(ServiceDocumentBundleService.WORK_DETAILED))
+                .doesNotExist();
     }
 
     @Test
@@ -128,6 +126,31 @@ class ServiceDocumentBundleControllerTests {
                 authentication))
                 .isInstanceOfSatisfying(ResponseStatusException.class,
                         exception -> assertThat(exception.getStatus()).isEqualTo(HttpStatus.FORBIDDEN));
+    }
+
+    private void createPersistentArchive(ServiceDocumentStorage storage, int serviceId) throws Exception {
+        Path serviceDirectory = storage.serviceDirectory(serviceId);
+        Files.createDirectories(serviceDirectory);
+        Files.write(serviceDirectory.resolve(ServiceDocumentBundleService.SERVICE_OVERVIEW),
+                "overview".getBytes(StandardCharsets.UTF_8));
+        Files.write(serviceDirectory.resolve(ServiceDocumentBundleService.PARTS_DETAILED),
+                "parts".getBytes(StandardCharsets.UTF_8));
+        Files.write(serviceDirectory.resolve(ServiceDocumentBundleService.WORK_DETAILED),
+                "work".getBytes(StandardCharsets.UTF_8));
+
+        Process process = new ProcessBuilder(
+                "tar", "-czf", storage.serviceArchive(serviceId).toString(), "--",
+                ServiceDocumentBundleService.SERVICE_OVERVIEW,
+                ServiceDocumentBundleService.PARTS_DETAILED,
+                ServiceDocumentBundleService.WORK_DETAILED)
+                .directory(serviceDirectory.toFile())
+                .redirectErrorStream(true)
+                .start();
+        assertThat(process.waitFor()).isZero();
+
+        Files.delete(serviceDirectory.resolve(ServiceDocumentBundleService.SERVICE_OVERVIEW));
+        Files.delete(serviceDirectory.resolve(ServiceDocumentBundleService.PARTS_DETAILED));
+        Files.delete(serviceDirectory.resolve(ServiceDocumentBundleService.WORK_DETAILED));
     }
 
     private Service completedService(int serviceId, int personId) {
