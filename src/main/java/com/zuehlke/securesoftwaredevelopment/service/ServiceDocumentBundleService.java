@@ -57,7 +57,8 @@ public class ServiceDocumentBundleService {
                     "Service documents are not available yet");
         }
 
-        Path extractionDirectory = Files.createTempDirectory("service-" + serviceId + "-documents-");
+        Path extractionDirectory = Files.createTempDirectory(
+                documentStorage.serviceDirectory(serviceId), ".selected-documents-");
         Path responseArchive = Files.createTempFile("service-" + serviceId + "-selected-", ".tar");
         try {
             extractSelectedDocuments(persistentArchive, extractionDirectory, extractionArguments);
