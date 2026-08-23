@@ -5,6 +5,7 @@ import com.zuehlke.securesoftwaredevelopment.domain.ServiceStatus;
 import com.zuehlke.securesoftwaredevelopment.domain.Technician;
 import com.zuehlke.securesoftwaredevelopment.domain.TechnicianAvailability;
 import com.zuehlke.securesoftwaredevelopment.repository.ServiceRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -27,6 +28,7 @@ public class ServiceWorkflowService {
     private final ServiceRepository serviceRepository;
     private final TechnicianDirectory technicianDirectory;
     private final ServiceWorkService serviceWorkService;
+    private ServiceFinalPriceService serviceFinalPriceService;
 
     public ServiceWorkflowService(ServiceRepository serviceRepository,
                                   TechnicianDirectory technicianDirectory,
@@ -34,6 +36,11 @@ public class ServiceWorkflowService {
         this.serviceRepository = serviceRepository;
         this.technicianDirectory = technicianDirectory;
         this.serviceWorkService = serviceWorkService;
+    }
+
+    @Autowired
+    void setServiceFinalPriceService(ServiceFinalPriceService serviceFinalPriceService) {
+        this.serviceFinalPriceService = serviceFinalPriceService;
     }
 
     public Service get(int serviceId) {
@@ -117,6 +124,7 @@ public class ServiceWorkflowService {
 
     public void complete(int serviceId) {
         serviceWorkService.prepareForCompletion(serviceId);
+        serviceFinalPriceService.apply(serviceId);
         if (!serviceRepository.complete(serviceId)) {
             throw invalidTransition();
         }
