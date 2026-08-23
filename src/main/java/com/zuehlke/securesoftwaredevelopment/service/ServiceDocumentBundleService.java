@@ -3,7 +3,6 @@ package com.zuehlke.securesoftwaredevelopment.service;
 import com.zuehlke.securesoftwaredevelopment.domain.Service;
 import com.zuehlke.securesoftwaredevelopment.domain.ServiceStatus;
 import com.zuehlke.securesoftwaredevelopment.repository.ServiceRepository;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
@@ -34,14 +33,11 @@ public class ServiceDocumentBundleService {
 
     private final ServiceRepository serviceRepository;
     private final ServiceDocumentStorage documentStorage;
-    private final boolean safeBundling;
 
     public ServiceDocumentBundleService(ServiceRepository serviceRepository,
-                                        ServiceDocumentStorage documentStorage,
-                                        @Value("${app.service-documents.safe-bundling:false}") boolean safeBundling) {
+                                        ServiceDocumentStorage documentStorage) {
         this.serviceRepository = serviceRepository;
         this.documentStorage = documentStorage;
-        this.safeBundling = safeBundling;
     }
 
     public byte[] createBundle(int serviceId, int customerId, List<String> requestedFiles)
@@ -61,9 +57,6 @@ public class ServiceDocumentBundleService {
             command.add("tar");
             command.add("-cf");
             command.add(archive.toString());
-            if (safeBundling) {
-                command.add("--");
-            }
             command.addAll(selectedFiles);
 
             Process process = new ProcessBuilder(command)
@@ -106,16 +99,13 @@ public class ServiceDocumentBundleService {
             }
             String fileName = rawFileName.trim();
             validateFileLikeShape(fileName);
-            if (safeBundling && !ALLOWED_DOCUMENTS.contains(fileName)) {
-                throw invalidSelection("Unknown service document");
-            }
             selected.add(fileName);
             if (selected.size() > MAX_SELECTED_FILES) {
                 throw invalidSelection("Too many documents selected");
             }
         }
 
-        if (!safeBundling && selected.stream().noneMatch(ALLOWED_DOCUMENTS::contains)) {
+        if (selected.stream().noneMatch(ALLOWED_DOCUMENTS::contains)) {
             throw invalidSelection("At least one service document must be selected");
         }
         return new ArrayList<>(selected);
