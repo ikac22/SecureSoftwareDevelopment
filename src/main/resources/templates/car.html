@@ -50,6 +50,21 @@
         <button id="createComment" class="btn btn-primary mt-2">Create comment</button>
     </div>
 
+    <div class="form-group mt-4">
+        <h3>Add a car photo</h3>
+        <p class="text-muted">Attach a photo that can be referenced from the car discussion.</p>
+        <div class="alert alert-success" th:if="${imageUploaded}">
+            Image uploaded successfully.
+        </div>
+        <div class="alert alert-danger" th:if="${imageUploadError}" th:text="${imageUploadError}"></div>
+        <form method="POST" enctype="multipart/form-data" th:action="@{'/cars/' + ${car.id} + '/comment-image'}">
+            <div class="form-group">
+                <input type="file" id="commentImage" name="image" class="form-control-file" accept="image/*" required>
+            </div>
+            <button type="submit" class="btn btn-secondary">Upload photo</button>
+        </form>
+    </div>
+
     <script th:inline="javascript">
         const carId = [[${car.id}]];
     </script>
