@@ -1,7 +1,8 @@
 T(java.lang.Math).max(
-    #basePrice.doubleValue() * 0.90,
-    #basePrice.doubleValue() * (
-        (${partnerCondition}) ? 0.95 :
-        (#partsPrice.doubleValue() > 30000 ? 0.98 : 1.00)
+    ${basePrice} * 0.90,
+    ${basePrice} * (
+        ((${partnerCode} == 'FLEET-10') or
+         (${partnerCode} == 'BRONZE-FIRST3' and ${completedServices} < 3)) ? 0.95 :
+        (${partsPrice} > 30000 ? 0.98 : 1.00)
     )
 )
