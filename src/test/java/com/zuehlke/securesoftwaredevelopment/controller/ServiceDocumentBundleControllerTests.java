@@ -178,13 +178,21 @@ class ServiceDocumentBundleControllerTests {
                 new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                if (!line.trim().isEmpty()) {
-                    lines.add(line.trim());
+                String normalized = normalizeArchiveMember(line.trim());
+                if (!normalized.isEmpty()) {
+                    lines.add(normalized);
                 }
             }
         }
         int exitCode = process.waitFor();
         assertThat(exitCode).isZero();
         return lines;
+    }
+
+    private String normalizeArchiveMember(String member) {
+        if (".".equals(member) || "./".equals(member)) {
+            return "";
+        }
+        return member.startsWith("./") ? member.substring(2) : member;
     }
 }
