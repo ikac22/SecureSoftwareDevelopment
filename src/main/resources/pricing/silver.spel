@@ -1,0 +1,6 @@
+T(java.lang.Math).min(
+    ${basePrice} * 0.82,
+    (${laborPrice} * (${completedServices} >= 3 ? 0.93 : 0.97))
+    + (${partsPrice} * (${partsPrice} > 25000 ? 0.95 : 0.98))
+    - ((${partnerCode} == 'FLEET-10') ? 500.0 : 0.0)
+)

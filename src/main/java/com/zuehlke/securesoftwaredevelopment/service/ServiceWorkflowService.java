@@ -30,22 +30,32 @@ public class ServiceWorkflowService {
     private final TechnicianDirectory technicianDirectory;
     private final ServiceWorkService serviceWorkService;
     private final ServiceDocumentGenerator serviceDocumentGenerator;
+    private final ServiceFinalPriceService serviceFinalPriceService;
 
     @Autowired
     public ServiceWorkflowService(ServiceRepository serviceRepository,
                                   TechnicianDirectory technicianDirectory,
                                   ServiceWorkService serviceWorkService,
-                                  ServiceDocumentGenerator serviceDocumentGenerator) {
+                                  ServiceDocumentGenerator serviceDocumentGenerator,
+                                  ServiceFinalPriceService serviceFinalPriceService) {
         this.serviceRepository = serviceRepository;
         this.technicianDirectory = technicianDirectory;
         this.serviceWorkService = serviceWorkService;
         this.serviceDocumentGenerator = serviceDocumentGenerator;
+        this.serviceFinalPriceService = serviceFinalPriceService;
     }
 
     ServiceWorkflowService(ServiceRepository serviceRepository,
                            TechnicianDirectory technicianDirectory,
                            ServiceWorkService serviceWorkService) {
-        this(serviceRepository, technicianDirectory, serviceWorkService, null);
+        this(serviceRepository, technicianDirectory, serviceWorkService, null, null);
+    }
+
+    ServiceWorkflowService(ServiceRepository serviceRepository,
+                           TechnicianDirectory technicianDirectory,
+                           ServiceWorkService serviceWorkService,
+                           ServiceDocumentGenerator serviceDocumentGenerator) {
+        this(serviceRepository, technicianDirectory, serviceWorkService, serviceDocumentGenerator, null);
     }
 
     public Service get(int serviceId) {
@@ -129,6 +139,9 @@ public class ServiceWorkflowService {
 
     public void complete(int serviceId) {
         ServiceDetails details = serviceWorkService.prepareForCompletion(serviceId);
+        if (serviceFinalPriceService != null) {
+            details = serviceFinalPriceService.apply(serviceId);
+        }
         if (!serviceRepository.complete(serviceId)) {
             throw invalidTransition();
         }

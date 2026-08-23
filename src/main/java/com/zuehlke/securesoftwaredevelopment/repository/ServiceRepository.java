@@ -49,6 +49,19 @@ public class ServiceRepository {
         }
     }
 
+    public int countCompletedByPersonId(int personId) {
+        String sqlQuery = "SELECT COUNT(*) FROM services WHERE personId = ? AND serviceStatus = 'COMPLETED'";
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sqlQuery)) {
+            statement.setInt(1, personId);
+            try (ResultSet rs = statement.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Could not count completed customer services", e);
+        }
+    }
+
     public void insertScheduledService(int userId, ScheduleService scheduleService, String tableName) throws SQLException {
         String sqlQuery = "insert into " + tableName + " (personId, carModel, description) values (?, ?, ?)";
         try (Connection connection = dataSource.getConnection();

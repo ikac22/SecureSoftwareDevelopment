@@ -6,20 +6,29 @@ public class Person {
     private String lastName;
     private String personalNumber;
     private String address;
+    private String partnerCode;
+
+    public Person() {
+    }
 
     public Person(int id, String firstName, String lastName, String personalNumber, String address) {
+        this(id, firstName, lastName, personalNumber, address, null);
+    }
+
+    public Person(int id, String firstName, String lastName, String personalNumber, String address, String partnerCode) {
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
         this.personalNumber = personalNumber;
         this.address = address;
+        this.partnerCode = partnerCode;
     }
 
     public int getId() {
         return id;
     }
 
-    public void setId() {
+    public void setId(int id) {
         this.id = id;
     }
 
@@ -51,7 +60,15 @@ public class Person {
         return address;
     }
 
-    public void setAddress(String streetNumber) {
-        this.address = streetNumber;
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public String getPartnerCode() {
+        return partnerCode;
+    }
+
+    public void setPartnerCode(String partnerCode) {
+        this.partnerCode = partnerCode;
     }
 }
