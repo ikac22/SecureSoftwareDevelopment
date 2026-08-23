@@ -89,6 +89,13 @@
                         </div>
                     </div>
 
+                    <div class="form-group">
+                        <label for="technicianSearch">Technician search</label>
+                        <input id="technicianSearch" class="form-control" type="text" maxlength="64"
+                               placeholder="Name, surname or email" autocomplete="off"/>
+                        <small class="form-text text-muted">Leave empty to show all service technicians.</small>
+                    </div>
+
                     <input id="selectedTechnician" type="hidden" name="technician"/>
                     <input id="selectedTime" type="hidden" name="time"/>
 
@@ -120,6 +127,7 @@
 
             var dateInput = document.getElementById('assignmentDate');
             var durationInput = document.getElementById('assignmentDuration');
+            var technicianSearch = document.getElementById('technicianSearch');
             var availability = document.getElementById('availability');
             var selectedTechnician = document.getElementById('selectedTechnician');
             var selectedTime = document.getElementById('selectedTime');
@@ -127,6 +135,7 @@
             var confirmButton = document.getElementById('confirmAssignment');
             var requestVersion = 0;
             var keepCurrentAssignment = true;
+            var searchTimer = null;
 
             function clearSelection() {
                 selectedTechnician.value = '';
@@ -205,6 +214,7 @@
                         });
 
                         var isCurrent = keepCurrentAssignment &&
+                            technicianSearch.value.trim() === '' &&
                             availability.dataset.currentDate === dateInput.value &&
                             availability.dataset.currentDuration === durationInput.value &&
                             availability.dataset.currentTechnician === item.technician.id &&
@@ -224,7 +234,9 @@
                     availability.appendChild(card);
                 });
 
-                if (slotCount === 0) {
+                if (items.length === 0) {
+                    showMessage('No technicians match the current search.', 'alert-warning');
+                } else if (slotCount === 0) {
                     showMessage('No mechanics have an available start time for the selected date and duration.', 'alert-warning');
                 }
             }
@@ -238,9 +250,9 @@
                     return;
                 }
 
-                // showMessage('Loading available start times…', 'alert-secondary');
                 var query = '?date=' + encodeURIComponent(dateInput.value) +
-                    '&estimatedDurationMinutes=' + encodeURIComponent(durationInput.value);
+                    '&estimatedDurationMinutes=' + encodeURIComponent(durationInput.value) +
+                    '&search=' + encodeURIComponent(technicianSearch.value.trim());
 
                 fetch(availability.dataset.url + query, {credentials: 'same-origin'})
                     .then(function (response) {
@@ -268,6 +280,11 @@
             durationInput.addEventListener('change', function () {
                 keepCurrentAssignment = false;
                 refreshAvailability();
+            });
+            technicianSearch.addEventListener('input', function () {
+                keepCurrentAssignment = false;
+                clearTimeout(searchTimer);
+                searchTimer = setTimeout(refreshAvailability, 250);
             });
             $('#assignmentModal').on('shown.bs.modal', function () {
                 keepCurrentAssignment = true;

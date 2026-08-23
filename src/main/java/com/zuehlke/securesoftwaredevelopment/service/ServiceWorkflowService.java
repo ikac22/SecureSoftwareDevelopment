@@ -20,6 +20,7 @@ public class ServiceWorkflowService {
     static final LocalTime OPENING_TIME = LocalTime.of(8, 0);
     static final LocalTime CLOSING_TIME = LocalTime.of(17, 0);
     static final int SLOT_MINUTES = 30;
+    static final int MAX_TECHNICIAN_SEARCH_LENGTH = 64;
 
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
 
@@ -38,14 +39,25 @@ public class ServiceWorkflowService {
 
     public List<TechnicianAvailability> findAvailableSlots(int serviceId, LocalDate date,
                                                             int estimatedDurationMinutes) {
+        return findAvailableSlots(serviceId, date, estimatedDurationMinutes, "");
+    }
+
+    public List<TechnicianAvailability> findAvailableSlots(int serviceId, LocalDate date,
+                                                            int estimatedDurationMinutes,
+                                                            String technicianSearch) {
         Service service = get(serviceId);
         validateAssignableStatus(service);
         validateDate(date);
         validateDuration(estimatedDurationMinutes);
+        String normalizedSearch = normalizeTechnicianSearch(technicianSearch);
         int allocationMinutes = allocatedDurationMinutes(estimatedDurationMinutes);
 
+        List<Technician> technicians = normalizedSearch.isEmpty()
+                ? technicianDirectory.findAll()
+                : technicianDirectory.search(normalizedSearch);
+
         List<TechnicianAvailability> availability = new ArrayList<>();
-        for (Technician technician : technicianDirectory.findAll()) {
+        for (Technician technician : technicians) {
             List<Service> activeAssignments =
                     serviceRepository.findActiveAssignments(technician.getId(), serviceId);
             List<String> availableStartTimes = new ArrayList<>();
@@ -71,9 +83,7 @@ public class ServiceWorkflowService {
         int allocationMinutes = allocatedDurationMinutes(estimatedDurationMinutes);
         validateStartTime(time, allocationMinutes);
 
-        boolean knownTechnician = technicianDirectory.findAll().stream()
-                .anyMatch(technician -> technician.getId().equals(technicianId));
-        if (!knownTechnician) {
+        if (!technicianDirectory.findById(technicianId).isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown technician");
         }
 
@@ -126,6 +136,18 @@ public class ServiceWorkflowService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Estimated duration must be positive and fit within business hours");
         }
+    }
+
+    private String normalizeTechnicianSearch(String search) {
+        if (search == null) {
+            return "";
+        }
+        String normalized = search.trim();
+        if (normalized.length() > MAX_TECHNICIAN_SEARCH_LENGTH) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Technician search is too long");
+        }
+        return normalized;
     }
 
     static int allocatedDurationMinutes(int estimatedDurationMinutes) {

@@ -49,11 +49,167 @@ sn: Nikolic
 mail: nikola.nikolic@securecar.test
 userPassword: employee123
 
+dn: uid=marija.maric,ou=people,dc=securecar,dc=test
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: marija.maric
+cn: Marija Maric
+givenName: Marija
+sn: Maric
+mail: marija.maric@securecar.test
+userPassword: technician123
+
+dn: uid=jelena.jovanovic,ou=people,dc=securecar,dc=test
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: jelena.jovanovic
+cn: Jelena Jovanovic
+givenName: Jelena
+sn: Jovanovic
+mail: jelena.jovanovic@securecar.test
+userPassword: technician123
+
+dn: uid=petar.petrovic,ou=people,dc=securecar,dc=test
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: petar.petrovic
+cn: Petar Petrovic
+givenName: Petar
+sn: Petrovic
+mail: petar.petrovic@securecar.test
+userPassword: technician123
+
+dn: uid=stefan.stefanovic,ou=people,dc=securecar,dc=test
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: stefan.stefanovic
+cn: Stefan Stefanovic
+givenName: Stefan
+sn: Stefanovic
+mail: stefan.stefanovic@securecar.test
+userPassword: technician123
+
+dn: uid=milica.milic,ou=people,dc=securecar,dc=test
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: milica.milic
+cn: Milica Milic
+givenName: Milica
+sn: Milic
+mail: milica.milic@securecar.test
+userPassword: technician123
+
+dn: uid=dejan.djokovic,ou=people,dc=securecar,dc=test
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: dejan.djokovic
+cn: Dejan Djokovic
+givenName: Dejan
+sn: Djokovic
+mail: dejan.djokovic@securecar.test
+userPassword: technician123
+
+dn: uid=ivan.ilic,ou=people,dc=securecar,dc=test
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: ivan.ilic
+cn: Ivan Ilic
+givenName: Ivan
+sn: Ilic
+mail: ivan.ilic@securecar.test
+userPassword: technician123
+
+dn: uid=sofija.savic,ou=people,dc=securecar,dc=test
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: sofija.savic
+cn: Sofija Savic
+givenName: Sofija
+sn: Savic
+mail: sofija.savic@securecar.test
+userPassword: technician123
+
+dn: uid=nemanja.nemanjic,ou=people,dc=securecar,dc=test
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: nemanja.nemanjic
+cn: Nemanja Nemanjic
+givenName: Nemanja
+sn: Nemanjic
+mail: nemanja.nemanjic@securecar.test
+userPassword: technician123
+
+dn: uid=luka.lukic,ou=people,dc=securecar,dc=test
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: luka.lukic
+cn: Luka Lukic
+givenName: Luka
+sn: Lukic
+mail: luka.lukic@securecar.test
+userPassword: technician123
+
+dn: uid=sara.simic,ou=people,dc=securecar,dc=test
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: sara.simic
+cn: Sara Simic
+givenName: Sara
+sn: Simic
+mail: sara.simic@securecar.test
+userPassword: technician123
+
+dn: uid=milos.milojevic,ou=people,dc=securecar,dc=test
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: milos.milojevic
+cn: Milos Milojevic
+givenName: Milos
+sn: Milojevic
+mail: milos.milojevic@securecar.test
+userPassword: technician123
+
 dn: cn=SERVICE_TECHNICIANS,ou=groups,dc=securecar,dc=test
 objectClass: top
 objectClass: groupOfNames
 cn: SERVICE_TECHNICIANS
 member: uid=marko.markovic,ou=people,dc=securecar,dc=test
+member: uid=marija.maric,ou=people,dc=securecar,dc=test
+member: uid=jelena.jovanovic,ou=people,dc=securecar,dc=test
+member: uid=petar.petrovic,ou=people,dc=securecar,dc=test
+member: uid=stefan.stefanovic,ou=people,dc=securecar,dc=test
+member: uid=milica.milic,ou=people,dc=securecar,dc=test
+member: uid=dejan.djokovic,ou=people,dc=securecar,dc=test
+member: uid=ivan.ilic,ou=people,dc=securecar,dc=test
+member: uid=sofija.savic,ou=people,dc=securecar,dc=test
+member: uid=nemanja.nemanjic,ou=people,dc=securecar,dc=test
+member: uid=luka.lukic,ou=people,dc=securecar,dc=test
+member: uid=sara.simic,ou=people,dc=securecar,dc=test
+member: uid=milos.milojevic,ou=people,dc=securecar,dc=test
 
 dn: cn=SERVICE_MANAGERS,ou=groups,dc=securecar,dc=test
 objectClass: top

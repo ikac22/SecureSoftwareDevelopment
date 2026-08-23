@@ -73,9 +73,10 @@ public class ServiceController {
     public List<TechnicianAvailability> availableSlots(
             @PathVariable int id,
             @RequestParam String date,
-            @RequestParam int estimatedDurationMinutes) {
+            @RequestParam int estimatedDurationMinutes,
+            @RequestParam(required = false, defaultValue = "") String search) {
         return serviceWorkflowService.findAvailableSlots(
-                id, parseDate(date), estimatedDurationMinutes);
+                id, parseDate(date), estimatedDurationMinutes, search);
     }
 
     @PostMapping("/services/{id}/assign")
