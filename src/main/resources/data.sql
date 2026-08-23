@@ -54,4 +54,6 @@ values (1, 1, null, 'Mercedes S 560', 'Regular maintenance', null, 'SCHEDULED', 
        (2, 2, '2026-08-23', 'Honda Civic', 'Brake noise and reduced braking performance',
         '09:00:00', 'IN_PROGRESS', 'marko.markovic', 90, null),
        (3, 1, '2026-08-22', 'Ford Focus', 'Oil and filter replacement',
-        '11:00:00', 'COMPLETED', 'ana.anic', 60, '2026-08-22 12:00:00');
+        '11:00:00', 'COMPLETED', 'ana.anic', 60, '2026-08-22 12:00:00'),
+       (4, 2, '2026-08-20', 'Volkswagen Golf', 'Annual maintenance and brake inspection',
+        '14:00:00', 'COMPLETED', 'jelena.jovanovic', 90, '2026-08-20 15:20:00');

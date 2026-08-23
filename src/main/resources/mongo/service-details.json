@@ -2,6 +2,12 @@
   {
     "_id": "service-details-2",
     "serviceId": 2,
+    "customerId": 2,
+    "carModel": "Honda Civic",
+    "serviceDescription": "Brake noise and reduced braking performance",
+    "technician": "marko.markovic",
+    "serviceDate": "2026-08-23",
+    "serviceTime": "09:00",
     "performedServices": [
       {
         "itemId": "performed-service-2-brakes",
@@ -42,6 +48,13 @@
   {
     "_id": "service-details-3",
     "serviceId": 3,
+    "customerId": 1,
+    "carModel": "Ford Focus",
+    "serviceDescription": "Oil and filter replacement",
+    "technician": "ana.anic",
+    "serviceDate": "2026-08-22",
+    "serviceTime": "11:00",
+    "completedAt": "2026-08-22T12:00:00Z",
     "performedServices": [
       {
         "itemId": "performed-service-3-oil",
@@ -92,6 +105,53 @@
           }
         ],
         "comment": "Oil level verified after a short engine run"
+      }
+    ]
+  },
+  {
+    "_id": "service-details-4",
+    "serviceId": 4,
+    "customerId": 2,
+    "carModel": "Volkswagen Golf",
+    "serviceDescription": "Annual maintenance and brake inspection",
+    "technician": "jelena.jovanovic",
+    "serviceDate": "2026-08-20",
+    "serviceTime": "14:00",
+    "completedAt": "2026-08-20T15:20:00Z",
+    "performedServices": [
+      {
+        "itemId": "performed-service-4-brakes",
+        "catalogServiceId": "service-type-brakes",
+        "name": "Brake service",
+        "description": "Inspection and servicing of the braking system",
+        "attributes": {
+          "system": "BRAKES",
+          "recommendedIntervalKm": 30000
+        },
+        "laborPrice": 4000.00,
+        "subServices": [
+          {"itemId": "performed-subservice-4-front", "name": "Front brake inspection"},
+          {"itemId": "performed-subservice-4-fluid", "name": "Brake fluid check"}
+        ],
+        "usedParts": [
+          {
+            "itemId": "used-part-4-brake-pad",
+            "catalogPartId": "part-brake-pad-front",
+            "name": "Front brake pad set",
+            "description": "Brake pad set for the front axle",
+            "partNumber": "BP-FRONT-01",
+            "manufacturer": "Example Parts",
+            "unit": "SET",
+            "attributes": {
+              "axle": "FRONT",
+              "material": "CERAMIC"
+            },
+            "quantity": 1,
+            "unitPrice": 7500.00,
+            "comment": "Replaced after inspection"
+          }
+        ],
+        "comment": "Completed during annual maintenance"
       }
     ]
   }

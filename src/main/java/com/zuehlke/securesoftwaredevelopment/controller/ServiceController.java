@@ -41,7 +41,7 @@ public class ServiceController {
     @GetMapping("/scheduled-services")
     public String showServices(Authentication authentication, Model model) {
         User customer = authenticatedCustomer(authentication);
-        model.addAttribute("scheduledServices", serviceRepository.findByPersonId(customer.getId()));
+        model.addAttribute("scheduledServices", serviceRepository.findActiveByPersonId(customer.getId()));
         return "scheduled-services";
     }
 

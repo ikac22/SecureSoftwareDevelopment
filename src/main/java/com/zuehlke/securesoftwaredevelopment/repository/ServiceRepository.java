@@ -49,6 +49,25 @@ public class ServiceRepository {
         }
     }
 
+    public List<Service> findActiveByPersonId(int personId) {
+        List<Service> services = new ArrayList<>();
+        String sqlQuery = "SELECT " + SERVICE_COLUMNS + " FROM services "
+                + "WHERE personId = ? AND serviceStatus IN ('SCHEDULED', 'ASSIGNED', 'IN_PROGRESS') "
+                + "ORDER BY id";
+        try (Connection connection = dataSource.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sqlQuery)) {
+            statement.setInt(1, personId);
+            try (ResultSet rs = statement.executeQuery()) {
+                while (rs.next()) {
+                    services.add(mapService(rs));
+                }
+            }
+            return services;
+        } catch (SQLException e) {
+            throw new IllegalStateException("Could not load active customer services", e);
+        }
+    }
+
     public int countCompletedByPersonId(int personId) {
         String sqlQuery = "SELECT COUNT(*) FROM services WHERE personId = ? AND serviceStatus = 'COMPLETED'";
         try (Connection connection = dataSource.getConnection();

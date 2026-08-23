@@ -31,31 +31,34 @@ public class ServiceWorkflowService {
     private final ServiceWorkService serviceWorkService;
     private final ServiceDocumentGenerator serviceDocumentGenerator;
     private final ServiceFinalPriceService serviceFinalPriceService;
+    private final ServiceHistoryService serviceHistoryService;
 
     @Autowired
     public ServiceWorkflowService(ServiceRepository serviceRepository,
                                   TechnicianDirectory technicianDirectory,
                                   ServiceWorkService serviceWorkService,
                                   ServiceDocumentGenerator serviceDocumentGenerator,
-                                  ServiceFinalPriceService serviceFinalPriceService) {
+                                  ServiceFinalPriceService serviceFinalPriceService,
+                                  ServiceHistoryService serviceHistoryService) {
         this.serviceRepository = serviceRepository;
         this.technicianDirectory = technicianDirectory;
         this.serviceWorkService = serviceWorkService;
         this.serviceDocumentGenerator = serviceDocumentGenerator;
         this.serviceFinalPriceService = serviceFinalPriceService;
+        this.serviceHistoryService = serviceHistoryService;
     }
 
     ServiceWorkflowService(ServiceRepository serviceRepository,
                            TechnicianDirectory technicianDirectory,
                            ServiceWorkService serviceWorkService) {
-        this(serviceRepository, technicianDirectory, serviceWorkService, null, null);
+        this(serviceRepository, technicianDirectory, serviceWorkService, null, null, null);
     }
 
     ServiceWorkflowService(ServiceRepository serviceRepository,
                            TechnicianDirectory technicianDirectory,
                            ServiceWorkService serviceWorkService,
                            ServiceDocumentGenerator serviceDocumentGenerator) {
-        this(serviceRepository, technicianDirectory, serviceWorkService, serviceDocumentGenerator, null);
+        this(serviceRepository, technicianDirectory, serviceWorkService, serviceDocumentGenerator, null, null);
     }
 
     public Service get(int serviceId) {
@@ -145,8 +148,12 @@ public class ServiceWorkflowService {
         if (!serviceRepository.complete(serviceId)) {
             throw invalidTransition();
         }
+
+        Service completedService = get(serviceId);
+        if (serviceHistoryService != null) {
+            details = serviceHistoryService.captureCompletedService(completedService, details);
+        }
         if (serviceDocumentGenerator != null) {
-            Service completedService = get(serviceId);
             serviceDocumentGenerator.generate(completedService, details);
         }
     }

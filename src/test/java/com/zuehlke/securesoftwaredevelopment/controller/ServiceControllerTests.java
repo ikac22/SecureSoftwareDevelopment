@@ -55,18 +55,18 @@ class ServiceControllerTests {
     }
 
     @Test
-    void servicesPageLoadsOnlyLoggedInCustomersServices() {
+    void servicesPageLoadsOnlyLoggedInCustomersActiveServices() {
         User customer = new User(42, "customer", "password");
         Authentication authentication = mock(Authentication.class);
         Service service = service(ServiceStatus.SCHEDULED);
         when(authentication.getPrincipal()).thenReturn(customer);
-        when(serviceRepository.findByPersonId(42)).thenReturn(Collections.singletonList(service));
+        when(serviceRepository.findActiveByPersonId(42)).thenReturn(Collections.singletonList(service));
         ConcurrentModel model = new ConcurrentModel();
 
         assertThat(controller.showServices(authentication, model)).isEqualTo("scheduled-services");
         assertThat(model.get("scheduledServices")).isEqualTo(Collections.singletonList(service));
         assertThat(model.containsAttribute("columns")).isFalse();
-        verify(serviceRepository).findByPersonId(42);
+        verify(serviceRepository).findActiveByPersonId(42);
     }
 
     @Test

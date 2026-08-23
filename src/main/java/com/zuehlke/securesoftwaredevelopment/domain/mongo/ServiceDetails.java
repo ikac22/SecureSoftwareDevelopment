@@ -24,6 +24,13 @@ public class ServiceDetails {
     @Version
     private Long version;
 
+    private Integer customerId;
+    private String carModel;
+    private String serviceDescription;
+    private String technician;
+    private String serviceDate;
+    private String serviceTime;
+    private Instant completedAt;
     private List<PerformedService> performedServices = new ArrayList<>();
     private BigDecimal totalPrice = BigDecimal.ZERO;
     private Instant updatedAt;
@@ -58,6 +65,62 @@ public class ServiceDetails {
 
     public void setVersion(Long version) {
         this.version = version;
+    }
+
+    public Integer getCustomerId() {
+        return customerId;
+    }
+
+    public void setCustomerId(Integer customerId) {
+        this.customerId = customerId;
+    }
+
+    public String getCarModel() {
+        return carModel;
+    }
+
+    public void setCarModel(String carModel) {
+        this.carModel = carModel;
+    }
+
+    public String getServiceDescription() {
+        return serviceDescription;
+    }
+
+    public void setServiceDescription(String serviceDescription) {
+        this.serviceDescription = serviceDescription;
+    }
+
+    public String getTechnician() {
+        return technician;
+    }
+
+    public void setTechnician(String technician) {
+        this.technician = technician;
+    }
+
+    public String getServiceDate() {
+        return serviceDate;
+    }
+
+    public void setServiceDate(String serviceDate) {
+        this.serviceDate = serviceDate;
+    }
+
+    public String getServiceTime() {
+        return serviceTime;
+    }
+
+    public void setServiceTime(String serviceTime) {
+        this.serviceTime = serviceTime;
+    }
+
+    public Instant getCompletedAt() {
+        return completedAt;
+    }
+
+    public void setCompletedAt(Instant completedAt) {
+        this.completedAt = completedAt;
     }
 
     public List<PerformedService> getPerformedServices() {
