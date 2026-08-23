@@ -15,7 +15,6 @@ public class CommentRepository {
 
     private static final Logger LOG = LoggerFactory.getLogger(CommentRepository.class);
 
-
     private DataSource dataSource;
 
     public CommentRepository(DataSource dataSource) {
@@ -23,14 +22,14 @@ public class CommentRepository {
     }
 
     public void create(Comment comment) {
-        String query = "insert into comments(carId, userId, comment) values (?, ?, ?)";
+        String query = "insert into comments(carId, userId, comment, imagePath) values (?, ?, ?, ?)";
 
         try (Connection connection = dataSource.getConnection();
-             PreparedStatement statement = connection.prepareStatement(query);
-        ) {
+             PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setInt(1, comment.getCarId());
             statement.setInt(2, comment.getUserId());
             statement.setString(3, comment.getComment());
+            statement.setString(4, comment.getImagePath());
             statement.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -39,12 +38,12 @@ public class CommentRepository {
 
     public List<Comment> getAll(String carId) {
         List<Comment> commentList = new ArrayList<>();
-        String query = "SELECT carId, userId, comment FROM comments WHERE carId = " + carId;
+        String query = "SELECT carId, userId, comment, imagePath FROM comments WHERE carId = " + carId;
         try (Connection connection = dataSource.getConnection();
              Statement statement = connection.createStatement();
              ResultSet rs = statement.executeQuery(query)) {
             while (rs.next()) {
-                commentList.add(new Comment(rs.getInt(1), rs.getInt(2), rs.getString(3)));
+                commentList.add(new Comment(rs.getInt(1), rs.getInt(2), rs.getString(3), rs.getString(4)));
             }
         } catch (SQLException e) {
             e.printStackTrace();
