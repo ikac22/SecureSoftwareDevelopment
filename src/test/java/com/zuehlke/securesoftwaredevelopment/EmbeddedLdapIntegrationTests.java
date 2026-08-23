@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@SpringBootTest
+@SpringBootTest(properties = "spring.datasource.url=jdbc:h2:mem:${random.uuid}")
 class EmbeddedLdapIntegrationTests {
 
     private static final String PEOPLE_SEARCH_BASE = "ou=people,dc=securecar,dc=test";
