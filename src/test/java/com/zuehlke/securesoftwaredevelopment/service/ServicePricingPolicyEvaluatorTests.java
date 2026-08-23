@@ -42,6 +42,23 @@ class ServicePricingPolicyEvaluatorTests {
     }
 
     @Test
+    void introductoryBronzeCodeWorksOnlyForFirstThreeCompletedServices() {
+        BigDecimal eligible = evaluator.evaluatePreview(
+                "BRONZE", new BigDecimal("8000"), new BigDecimal("2000"),
+                90, 2, "BRONZE-FIRST3");
+        BigDecimal noLongerEligible = evaluator.evaluatePreview(
+                "BRONZE", new BigDecimal("8000"), new BigDecimal("2000"),
+                90, 3, "BRONZE-FIRST3");
+        BigDecimal wrongTier = evaluator.evaluatePreview(
+                "SILVER", new BigDecimal("8000"), new BigDecimal("2000"),
+                90, 2, "BRONZE-FIRST3");
+
+        assertThat(eligible).isEqualByComparingTo("9500.00");
+        assertThat(noLongerEligible).isEqualByComparingTo("10000.00");
+        assertThat(wrongTier).isNotEqualByComparingTo("9500.00");
+    }
+
+    @Test
     void persistedTextIsInterpolatedBeforeSpelParsing() {
         ServiceDetails details = details("8000", "2000");
         Service service = service();
@@ -50,6 +67,19 @@ class ServicePricingPolicyEvaluatorTests {
                 person("NONE"), 0);
         BigDecimal injectedCondition = evaluator.evaluate(details, service,
                 person("x' == 'x' or 'x"), 0);
+
+        assertThat(ordinary).isEqualByComparingTo("10000.00");
+        assertThat(injectedCondition).isEqualByComparingTo("9500.00");
+    }
+
+    @Test
+    void calculatorUsesTheSameStringRenderedPricingPath() {
+        BigDecimal ordinary = evaluator.evaluatePreview(
+                "BRONZE", new BigDecimal("8000"), new BigDecimal("2000"),
+                90, 0, "NONE");
+        BigDecimal injectedCondition = evaluator.evaluatePreview(
+                "BRONZE", new BigDecimal("8000"), new BigDecimal("2000"),
+                90, 0, "x' == 'x' or 'x");
 
         assertThat(ordinary).isEqualByComparingTo("10000.00");
         assertThat(injectedCondition).isEqualByComparingTo("9500.00");
