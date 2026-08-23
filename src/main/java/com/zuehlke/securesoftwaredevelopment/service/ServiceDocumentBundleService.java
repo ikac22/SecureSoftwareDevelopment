@@ -16,9 +16,12 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Component
 public class ServiceDocumentBundleService {
@@ -43,35 +46,66 @@ public class ServiceDocumentBundleService {
     public byte[] createBundle(int serviceId, int customerId, List<String> requestedFiles)
             throws IOException, InterruptedException {
         assertCompletedServiceOwnedByCustomer(serviceId, customerId);
-        List<String> selectedFiles = normalizeSelection(requestedFiles);
+        List<String> extractionArguments = normalizeSelection(requestedFiles);
+        List<String> selectedDocuments = extractionArguments.stream()
+                .filter(ALLOWED_DOCUMENTS::contains)
+                .collect(Collectors.toList());
 
-        Path serviceDirectory = documentStorage.serviceDirectory(serviceId);
-        if (!Files.isDirectory(serviceDirectory)) {
+        Path persistentArchive = documentStorage.serviceArchive(serviceId);
+        if (!Files.isRegularFile(persistentArchive)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Service documents are not available yet");
         }
 
-        Path archive = Files.createTempFile("service-" + serviceId + "-documents-", ".tar");
+        Path extractionDirectory = Files.createTempDirectory("service-" + serviceId + "-documents-");
+        Path responseArchive = Files.createTempFile("service-" + serviceId + "-selected-", ".tar");
         try {
-            List<String> command = new ArrayList<>();
-            command.add("tar");
-            command.add("-cf");
-            command.add(archive.toString());
-            command.addAll(selectedFiles);
-
-            Process process = new ProcessBuilder(command)
-                    .directory(serviceDirectory.toFile())
-                    .redirectErrorStream(true)
-                    .start();
-
-            String processOutput = readOutput(process.getInputStream());
-            int exitCode = process.waitFor();
-            if (exitCode != 0) {
-                throw new IOException("tar failed with exit code " + exitCode + ": " + processOutput);
-            }
-            return Files.readAllBytes(archive);
+            extractSelectedDocuments(persistentArchive, extractionDirectory, extractionArguments);
+            createResponseArchive(responseArchive, extractionDirectory, selectedDocuments);
+            return Files.readAllBytes(responseArchive);
         } finally {
-            Files.deleteIfExists(archive);
+            Files.deleteIfExists(responseArchive);
+            deleteRecursively(extractionDirectory);
+        }
+    }
+
+    private void extractSelectedDocuments(Path persistentArchive,
+                                          Path extractionDirectory,
+                                          List<String> extractionArguments)
+            throws IOException, InterruptedException {
+        List<String> command = new ArrayList<>();
+        command.add("tar");
+        command.add("-xzf");
+        command.add(persistentArchive.toString());
+        command.add("-C");
+        command.add(extractionDirectory.toString());
+        command.addAll(extractionArguments);
+        runTar(command, extractionDirectory);
+    }
+
+    private void createResponseArchive(Path responseArchive,
+                                       Path extractionDirectory,
+                                       List<String> selectedDocuments)
+            throws IOException, InterruptedException {
+        List<String> command = new ArrayList<>();
+        command.add("tar");
+        command.add("-cf");
+        command.add(responseArchive.toString());
+        command.add("--");
+        command.addAll(selectedDocuments);
+        runTar(command, extractionDirectory);
+    }
+
+    private void runTar(List<String> command, Path workingDirectory)
+            throws IOException, InterruptedException {
+        Process process = new ProcessBuilder(command)
+                .directory(workingDirectory.toFile())
+                .redirectErrorStream(true)
+                .start();
+        String processOutput = readOutput(process.getInputStream());
+        int exitCode = process.waitFor();
+        if (exitCode != 0) {
+            throw new IOException("tar failed with exit code " + exitCode + ": " + processOutput);
         }
     }
 
@@ -137,6 +171,23 @@ public class ServiceDocumentBundleService {
             output.write(buffer, 0, read);
         }
         return new String(output.toByteArray(), StandardCharsets.UTF_8);
+    }
+
+    private void deleteRecursively(Path directory) {
+        if (directory == null || !Files.exists(directory)) {
+            return;
+        }
+        try (Stream<Path> paths = Files.walk(directory)) {
+            paths.sorted(Comparator.reverseOrder()).forEach(path -> {
+                try {
+                    Files.deleteIfExists(path);
+                } catch (IOException ignored) {
+                    // Best-effort cleanup for request-scoped temporary files.
+                }
+            });
+        } catch (IOException ignored) {
+            // Best-effort cleanup for request-scoped temporary files.
+        }
     }
 
     private ResponseStatusException invalidSelection(String message) {
