@@ -9,12 +9,16 @@ import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.springframework.stereotype.Component;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Component
@@ -40,14 +44,64 @@ public class ServiceDocumentGenerator {
         }
 
         Path directory = storage.serviceDirectory(service.getId());
+        List<Path> generatedDocuments = Arrays.asList(
+                directory.resolve(ServiceDocumentBundleService.SERVICE_OVERVIEW),
+                directory.resolve(ServiceDocumentBundleService.PARTS_DETAILED),
+                directory.resolve(ServiceDocumentBundleService.WORK_DETAILED));
         try {
             Files.createDirectories(directory);
-            writePdf(directory.resolve(ServiceDocumentBundleService.SERVICE_OVERVIEW), overviewLines(service, details));
-            writePdf(directory.resolve(ServiceDocumentBundleService.PARTS_DETAILED), partsLines(service, details));
-            writePdf(directory.resolve(ServiceDocumentBundleService.WORK_DETAILED), workLines(service, details));
+            writePdf(generatedDocuments.get(0), overviewLines(service, details));
+            writePdf(generatedDocuments.get(1), partsLines(service, details));
+            writePdf(generatedDocuments.get(2), workLines(service, details));
+            createPersistentArchive(service.getId(), directory);
         } catch (IOException exception) {
             throw new IllegalStateException("Failed to generate service documents", exception);
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Service document archiving was interrupted", exception);
+        } finally {
+            for (Path document : generatedDocuments) {
+                try {
+                    Files.deleteIfExists(document);
+                } catch (IOException ignored) {
+                    // Best-effort cleanup; the persistent archive is the source of truth after completion.
+                }
+            }
         }
+    }
+
+    private void createPersistentArchive(int serviceId, Path directory)
+            throws IOException, InterruptedException {
+        Path archive = storage.serviceArchive(serviceId);
+        Path temporaryArchive = Files.createTempFile(directory, "service-documents-", ".tar.gz");
+        try {
+            Process process = new ProcessBuilder(
+                    "tar", "-czf", temporaryArchive.toString(),
+                    ServiceDocumentBundleService.SERVICE_OVERVIEW,
+                    ServiceDocumentBundleService.PARTS_DETAILED,
+                    ServiceDocumentBundleService.WORK_DETAILED)
+                    .directory(directory.toFile())
+                    .redirectErrorStream(true)
+                    .start();
+            String output = readOutput(process.getInputStream());
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                throw new IOException("tar failed with exit code " + exitCode + ": " + output);
+            }
+            Files.move(temporaryArchive, archive, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        } finally {
+            Files.deleteIfExists(temporaryArchive);
+        }
+    }
+
+    private String readOutput(InputStream inputStream) throws IOException {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        byte[] buffer = new byte[1024];
+        int read;
+        while ((read = inputStream.read(buffer)) != -1) {
+            output.write(buffer, 0, read);
+        }
+        return new String(output.toByteArray(), StandardCharsets.UTF_8);
     }
 
     private List<String> overviewLines(Service service, ServiceDetails details) {
