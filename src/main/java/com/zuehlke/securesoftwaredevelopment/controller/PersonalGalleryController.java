@@ -29,21 +29,25 @@ public class PersonalGalleryController {
 
     @GetMapping("/gallery/image")
     public ResponseEntity<Resource> image(@RequestParam("path") String path) {
-        Resource resource = galleryService.loadForDisplay(path);
-
-        MediaType mediaType = MediaType.APPLICATION_OCTET_STREAM;
         try {
-            String detected = Files.probeContentType(resource.getFile().toPath());
-            if (detected != null) {
-                mediaType = MediaType.parseMediaType(detected);
-            }
-        } catch (IOException | IllegalArgumentException ignored) {
-            // Keep a generic binary response when the platform cannot determine a type.
-        }
+            Resource resource = galleryService.loadForDisplay(path);
 
-        return ResponseEntity.ok()
-                .contentType(mediaType)
-                .body(resource);
+            MediaType mediaType = MediaType.APPLICATION_OCTET_STREAM;
+            try {
+                String detected = Files.probeContentType(resource.getFile().toPath());
+                if (detected != null) {
+                    mediaType = MediaType.parseMediaType(detected);
+                }
+            } catch (IOException | IllegalArgumentException ignored) {
+                // Keep a generic binary response when the platform cannot determine a type.
+            }
+
+            return ResponseEntity.ok()
+                    .contentType(mediaType)
+                    .body(resource);
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, exception.getMessage());
+        }
     }
 
     @PostMapping(value = "/my-gallery/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -54,21 +58,28 @@ public class PersonalGalleryController {
             Authentication authentication) {
         User customer = requireCustomer(authentication);
 
-        PersonalGalleryService.UploadResult result = galleryService.store(
-                customer.getId(), image, fileName, overwrite);
+        try {
+            PersonalGalleryService.UploadResult result = galleryService.store(
+                    customer.getId(), image, fileName, overwrite);
 
-        Map<String, Object> response = new LinkedHashMap<>();
-        response.put("fileName", result.getFileName());
-        response.put("status", result.getStatus().name());
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("fileName", result.getFileName());
+            response.put("status", result.getStatus().name());
 
-        if (result.getStatus() == PersonalGalleryService.UploadStatus.REQUIRES_OVERWRITE) {
-            response.put("requiresOverwrite", true);
-            response.put("message", "A file with this server name already exists. Confirm overwrite to continue.");
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+            if (result.getStatus() == PersonalGalleryService.UploadStatus.REQUIRES_OVERWRITE) {
+                response.put("requiresOverwrite", true);
+                response.put("message", "A file with this server name already exists. Confirm overwrite to continue.");
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+            }
+
+            response.put("requiresOverwrite", false);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException exception) {
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("requiresOverwrite", false);
+            response.put("message", exception.getMessage());
+            return ResponseEntity.badRequest().body(response);
         }
-
-        response.put("requiresOverwrite", false);
-        return ResponseEntity.ok(response);
     }
 
     private User requireCustomer(Authentication authentication) {
