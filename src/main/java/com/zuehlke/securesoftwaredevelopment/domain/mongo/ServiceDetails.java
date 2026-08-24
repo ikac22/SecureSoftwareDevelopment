@@ -31,6 +31,7 @@ public class ServiceDetails {
     private String serviceDate;
     private String serviceTime;
     private Instant completedAt;
+    private PricingPolicySnapshot pricingPolicy;
     private List<PerformedService> performedServices = new ArrayList<>();
     private BigDecimal totalPrice = BigDecimal.ZERO;
     private Instant updatedAt;
@@ -123,6 +124,14 @@ public class ServiceDetails {
         this.completedAt = completedAt;
     }
 
+    public PricingPolicySnapshot getPricingPolicy() {
+        return pricingPolicy;
+    }
+
+    public void setPricingPolicy(PricingPolicySnapshot pricingPolicy) {
+        this.pricingPolicy = pricingPolicy;
+    }
+
     public List<PerformedService> getPerformedServices() {
         return performedServices;
     }
@@ -145,6 +154,56 @@ public class ServiceDetails {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public static class PricingPolicySnapshot {
+        private String tier;
+        private String resource;
+        private BigDecimal basePrice;
+        private BigDecimal finalPrice;
+
+        public PricingPolicySnapshot() {
+        }
+
+        public PricingPolicySnapshot(String tier, String resource,
+                                     BigDecimal basePrice, BigDecimal finalPrice) {
+            this.tier = tier;
+            this.resource = resource;
+            this.basePrice = basePrice;
+            this.finalPrice = finalPrice;
+        }
+
+        public String getTier() {
+            return tier;
+        }
+
+        public void setTier(String tier) {
+            this.tier = tier;
+        }
+
+        public String getResource() {
+            return resource;
+        }
+
+        public void setResource(String resource) {
+            this.resource = resource;
+        }
+
+        public BigDecimal getBasePrice() {
+            return basePrice;
+        }
+
+        public void setBasePrice(BigDecimal basePrice) {
+            this.basePrice = basePrice;
+        }
+
+        public BigDecimal getFinalPrice() {
+            return finalPrice;
+        }
+
+        public void setFinalPrice(BigDecimal finalPrice) {
+            this.finalPrice = finalPrice;
+        }
     }
 
     public static class PerformedService {
