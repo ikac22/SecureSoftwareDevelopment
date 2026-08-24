@@ -52,6 +52,72 @@
         </form>
     </div>
 
+    <dl th:if="${!directoryManaged and !editableProfile and person != null}" class="row mt-3">
+        <dt class="col-sm-3">First Name</dt>
+        <dd class="col-sm-9" th:text="${person.firstName}"></dd>
+        <dt class="col-sm-3">Last Name</dt>
+        <dd class="col-sm-9" th:text="${person.lastName}"></dd>
+        <dt class="col-sm-3">Personal Number</dt>
+        <dd class="col-sm-9" th:text="${person.personalNumber}"></dd>
+        <dt class="col-sm-3">Address</dt>
+        <dd class="col-sm-9" th:text="${person.address}"></dd>
+        <dt class="col-sm-3">Partner / fleet pricing code</dt>
+        <dd class="col-sm-9" th:text="${person.partnerCode ?: '-'}"></dd>
+    </dl>
+
+    <section th:if="${person != null}" class="card mt-4 mb-4">
+        <div class="card-body">
+            <h2 class="h4">Personal car gallery</h2>
+            <p class="text-muted mb-3">
+                Photos shared by this customer. Select a photo to open it in full size.
+            </p>
+
+            <div th:if="${#lists.isEmpty(galleryImages)}" class="alert alert-light border">
+                This gallery is empty.
+            </div>
+
+            <div th:unless="${#lists.isEmpty(galleryImages)}" class="row">
+                <div class="col-md-4 mb-3" th:each="image : ${galleryImages}">
+                    <div class="card h-100">
+                        <a th:href="@{/gallery/image(path=${galleryPathPrefix + image})}" target="_blank">
+                            <img th:src="@{/gallery/image(path=${galleryPathPrefix + image})}"
+                                 class="card-img-top" alt="Car gallery image"
+                                 style="height: 220px; object-fit: cover;">
+                        </a>
+                        <div class="card-body py-2">
+                            <small th:text="${image}"></small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div th:if="${editableProfile}" class="border-top pt-4 mt-2">
+                <h3 class="h5">Upload a car photo</h3>
+                <p class="text-muted">
+                    Choose a local image and the file name that should be used by the server for your gallery copy.
+                </p>
+                <form id="galleryUploadForm" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="galleryImage">Image</label>
+                        <input type="file" id="galleryImage" name="image" class="form-control-file"
+                               accept="image/*" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="galleryFileName">Server file name</label>
+                        <input type="text" id="galleryFileName" name="fileName" class="form-control"
+                               placeholder="my-car.jpg" required>
+                        <small class="form-text text-muted">
+                            New gallery files are accepted only with a .jpg or .png name.
+                        </small>
+                    </div>
+                    <input type="hidden" name="overwrite" value="false">
+                    <button type="submit" class="btn btn-secondary">Upload photo</button>
+                </form>
+                <div id="galleryUploadMessage" class="mt-3"></div>
+            </div>
+        </div>
+    </section>
+
     <section th:if="${editableProfile}" class="card mt-5 mb-4">
         <div class="card-body">
             <h2 class="h4">Loyalty program</h2>
@@ -136,19 +202,6 @@
         </div>
     </section>
 
-    <dl th:if="${!directoryManaged and !editableProfile and person != null}" class="row mt-3">
-        <dt class="col-sm-3">First Name</dt>
-        <dd class="col-sm-9" th:text="${person.firstName}"></dd>
-        <dt class="col-sm-3">Last Name</dt>
-        <dd class="col-sm-9" th:text="${person.lastName}"></dd>
-        <dt class="col-sm-3">Personal Number</dt>
-        <dd class="col-sm-9" th:text="${person.personalNumber}"></dd>
-        <dt class="col-sm-3">Address</dt>
-        <dd class="col-sm-9" th:text="${person.address}"></dd>
-        <dt class="col-sm-3">Partner / fleet pricing code</dt>
-        <dd class="col-sm-9" th:text="${person.partnerCode ?: '-'}"></dd>
-    </dl>
-
     <div th:if="${editableProfile}" class="mt-2">
         <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#deleteModal">Delete User</button>
     </div>
@@ -181,6 +234,59 @@
                     method: 'DELETE'
                 }).then(function() { window.location.href = '/persons'; });
             });
+
+            const galleryUploadForm = document.getElementById('galleryUploadForm');
+            if (galleryUploadForm) {
+                galleryUploadForm.addEventListener('submit', async function (event) {
+                    event.preventDefault();
+                    const messageBox = document.getElementById('galleryUploadMessage');
+                    const formData = new FormData(galleryUploadForm);
+
+                    async function sendUpload(data) {
+                        const response = await fetch('/my-gallery/upload', {
+                            method: 'POST',
+                            body: data
+                        });
+
+                        let result = {};
+                        try {
+                            result = await response.json();
+                        } catch (ignored) {
+                            result = {};
+                        }
+
+                        if (response.status === 409 && result.requiresOverwrite) {
+                            const confirmed = window.confirm(
+                                'A server file named "' + result.fileName + '" already exists. Overwrite it?'
+                            );
+                            if (confirmed) {
+                                data.set('overwrite', 'true');
+                                return sendUpload(data);
+                            }
+                            return;
+                        }
+
+                        if (!response.ok) {
+                            messageBox.className = 'alert alert-danger mt-3';
+                            messageBox.textContent = result.message || 'Unable to upload image.';
+                            return;
+                        }
+
+                        messageBox.className = 'alert alert-success mt-3';
+                        messageBox.textContent = result.status === 'OVERWRITTEN'
+                            ? 'Image file overwritten successfully.'
+                            : 'Image uploaded successfully.';
+                        window.setTimeout(function () { window.location.reload(); }, 500);
+                    }
+
+                    try {
+                        await sendUpload(formData);
+                    } catch (error) {
+                        messageBox.className = 'alert alert-danger mt-3';
+                        messageBox.textContent = 'Unable to upload image.';
+                    }
+                });
+            }
 
             document.getElementById('loyaltyCalculator').addEventListener('submit', function (event) {
                 event.preventDefault();

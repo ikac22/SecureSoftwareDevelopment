@@ -5,6 +5,7 @@ import com.zuehlke.securesoftwaredevelopment.domain.Person;
 import com.zuehlke.securesoftwaredevelopment.domain.User;
 import com.zuehlke.securesoftwaredevelopment.repository.PersonRepository;
 import com.zuehlke.securesoftwaredevelopment.repository.UserRepository;
+import com.zuehlke.securesoftwaredevelopment.service.PersonalGalleryService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.List;
 
 @Controller
@@ -31,17 +33,23 @@ public class PersonsController {
 
     private final PersonRepository personRepository;
     private final UserRepository userRepository;
+    private final PersonalGalleryService galleryService;
 
-    public PersonsController(PersonRepository personRepository, UserRepository userRepository) {
+    public PersonsController(PersonRepository personRepository,
+                             UserRepository userRepository,
+                             PersonalGalleryService galleryService) {
         this.personRepository = personRepository;
         this.userRepository = userRepository;
+        this.galleryService = galleryService;
     }
 
     @GetMapping("/persons/{id}")
     public String person(@PathVariable int id, Model model) {
-        model.addAttribute("person", personRepository.get(id));
+        Person person = personRepository.get(id);
+        model.addAttribute("person", person);
         model.addAttribute("editableProfile", false);
         model.addAttribute("directoryManaged", false);
+        addGallery(model, person);
         return "person";
     }
 
@@ -58,11 +66,13 @@ public class PersonsController {
             model.addAttribute("person", person);
             model.addAttribute("editableProfile", true);
             model.addAttribute("directoryManaged", false);
+            addGallery(model, person);
         } else {
             model.addAttribute("person", null);
             model.addAttribute("editableProfile", false);
             model.addAttribute("directoryManaged", true);
             model.addAttribute("accountName", authentication == null ? "" : authentication.getName());
+            addGallery(model, null);
         }
 
         return "person";
@@ -103,5 +113,18 @@ public class PersonsController {
     @ResponseBody
     public List<Person> searchPersons(@RequestParam String searchTerm) throws SQLException {
         return personRepository.search(searchTerm);
+    }
+
+    private void addGallery(Model model, Person person) {
+        if (person == null) {
+            model.addAttribute("galleryImages", Collections.emptyList());
+            model.addAttribute("galleryOwnerId", null);
+            model.addAttribute("galleryPathPrefix", "");
+            return;
+        }
+
+        model.addAttribute("galleryImages", galleryService.listImages(person.getId()));
+        model.addAttribute("galleryOwnerId", person.getId());
+        model.addAttribute("galleryPathPrefix", person.getId() + "/");
     }
 }
