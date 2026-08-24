@@ -32,7 +32,9 @@ public class ServiceHistoryService {
         return serviceDetailsRepository.save(details);
     }
 
-    public List<ServiceDetails> search(int authenticatedCustomerId, Map<String, Object> filters) {
-        return serviceHistorySearchRepository.search(authenticatedCustomerId, filters);
+    public List<ServiceDetails> search(int authenticatedCustomerId,
+                                       Map<String, Object> filters,
+                                       Map<String, Object> view) {
+        return serviceHistorySearchRepository.search(authenticatedCustomerId, filters, view);
     }
 }
