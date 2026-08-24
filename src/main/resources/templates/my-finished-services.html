@@ -13,7 +13,7 @@
     <div class="d-flex justify-content-between align-items-start mb-3">
         <div>
             <h1>My finished services</h1>
-            <p class="text-muted mb-0">Search completed service history and download service documents.</p>
+            <p class="text-muted mb-0">Search completed service history and choose how much work detail to display.</p>
         </div>
     </div>
 
@@ -38,6 +38,17 @@
                 <label for="historyTechnician">Technician</label>
                 <input id="historyTechnician" class="form-control" maxlength="255"
                        placeholder="e.g. ana.anic"/>
+            </div>
+        </div>
+        <div class="form-group mb-3">
+            <label class="d-block mb-1">Details to show</label>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="historyShowServices" checked>
+                <label class="form-check-label" for="historyShowServices">Performed services</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="checkbox" id="historyShowParts" checked>
+                <label class="form-check-label" for="historyShowParts">Used parts</label>
             </div>
         </div>
         <div>
@@ -120,11 +131,19 @@
 
             function requestBody() {
                 const filters = {};
+                const view = {};
                 addFilter(filters, 'carModel', 'historyCarModel');
                 addFilter(filters, 'performedServices.name', 'historyServiceName');
                 addFilter(filters, 'performedServices.usedParts.name', 'historyPartName');
                 addFilter(filters, 'technician', 'historyTechnician');
-                return {filters: filters};
+
+                if (document.getElementById('historyShowServices').checked) {
+                    view['performedServices.name'] = 1;
+                }
+                if (document.getElementById('historyShowParts').checked) {
+                    view['performedServices.usedParts'] = 1;
+                }
+                return {filters: filters, view: view};
             }
 
             function appendText(parent, value, className) {
