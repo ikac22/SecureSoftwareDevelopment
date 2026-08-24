@@ -37,7 +37,8 @@ public class ServiceHistoryController {
         User customer = authenticatedCustomer(authentication);
         return serviceHistoryService.search(
                 customer.getId(),
-                request == null ? null : request.getFilters());
+                request == null ? null : request.getFilters(),
+                request == null ? null : request.getView());
     }
 
     private User authenticatedCustomer(Authentication authentication) {
@@ -49,6 +50,7 @@ public class ServiceHistoryController {
 
     public static class ServiceHistorySearch {
         private Map<String, Object> filters = new LinkedHashMap<>();
+        private Map<String, Object> view = new LinkedHashMap<>();
 
         public Map<String, Object> getFilters() {
             return filters;
@@ -56,6 +58,14 @@ public class ServiceHistoryController {
 
         public void setFilters(Map<String, Object> filters) {
             this.filters = filters == null ? new LinkedHashMap<>() : filters;
+        }
+
+        public Map<String, Object> getView() {
+            return view;
+        }
+
+        public void setView(Map<String, Object> view) {
+            this.view = view == null ? new LinkedHashMap<>() : view;
         }
     }
 }
