@@ -24,6 +24,14 @@ public class ServiceDetails {
     @Version
     private Long version;
 
+    private Integer customerId;
+    private String carModel;
+    private String serviceDescription;
+    private String technician;
+    private String serviceDate;
+    private String serviceTime;
+    private Instant completedAt;
+    private PricingPolicySnapshot pricingPolicy;
     private List<PerformedService> performedServices = new ArrayList<>();
     private BigDecimal totalPrice = BigDecimal.ZERO;
     private Instant updatedAt;
@@ -60,6 +68,70 @@ public class ServiceDetails {
         this.version = version;
     }
 
+    public Integer getCustomerId() {
+        return customerId;
+    }
+
+    public void setCustomerId(Integer customerId) {
+        this.customerId = customerId;
+    }
+
+    public String getCarModel() {
+        return carModel;
+    }
+
+    public void setCarModel(String carModel) {
+        this.carModel = carModel;
+    }
+
+    public String getServiceDescription() {
+        return serviceDescription;
+    }
+
+    public void setServiceDescription(String serviceDescription) {
+        this.serviceDescription = serviceDescription;
+    }
+
+    public String getTechnician() {
+        return technician;
+    }
+
+    public void setTechnician(String technician) {
+        this.technician = technician;
+    }
+
+    public String getServiceDate() {
+        return serviceDate;
+    }
+
+    public void setServiceDate(String serviceDate) {
+        this.serviceDate = serviceDate;
+    }
+
+    public String getServiceTime() {
+        return serviceTime;
+    }
+
+    public void setServiceTime(String serviceTime) {
+        this.serviceTime = serviceTime;
+    }
+
+    public Instant getCompletedAt() {
+        return completedAt;
+    }
+
+    public void setCompletedAt(Instant completedAt) {
+        this.completedAt = completedAt;
+    }
+
+    public PricingPolicySnapshot getPricingPolicy() {
+        return pricingPolicy;
+    }
+
+    public void setPricingPolicy(PricingPolicySnapshot pricingPolicy) {
+        this.pricingPolicy = pricingPolicy;
+    }
+
     public List<PerformedService> getPerformedServices() {
         return performedServices;
     }
@@ -82,6 +154,56 @@ public class ServiceDetails {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public static class PricingPolicySnapshot {
+        private String tier;
+        private String resource;
+        private BigDecimal basePrice;
+        private BigDecimal finalPrice;
+
+        public PricingPolicySnapshot() {
+        }
+
+        public PricingPolicySnapshot(String tier, String resource,
+                                     BigDecimal basePrice, BigDecimal finalPrice) {
+            this.tier = tier;
+            this.resource = resource;
+            this.basePrice = basePrice;
+            this.finalPrice = finalPrice;
+        }
+
+        public String getTier() {
+            return tier;
+        }
+
+        public void setTier(String tier) {
+            this.tier = tier;
+        }
+
+        public String getResource() {
+            return resource;
+        }
+
+        public void setResource(String resource) {
+            this.resource = resource;
+        }
+
+        public BigDecimal getBasePrice() {
+            return basePrice;
+        }
+
+        public void setBasePrice(BigDecimal basePrice) {
+            this.basePrice = basePrice;
+        }
+
+        public BigDecimal getFinalPrice() {
+            return finalPrice;
+        }
+
+        public void setFinalPrice(BigDecimal finalPrice) {
+            this.finalPrice = finalPrice;
+        }
     }
 
     public static class PerformedService {

@@ -62,6 +62,7 @@ class MongoCatalogSeederTests {
         });
         when(sqlRepository.findById(2)).thenReturn(Optional.of(sqlService(2, ServiceStatus.IN_PROGRESS)));
         when(sqlRepository.findById(3)).thenReturn(Optional.of(sqlService(3, ServiceStatus.COMPLETED)));
+        when(sqlRepository.findById(4)).thenReturn(Optional.of(sqlService(4, ServiceStatus.COMPLETED)));
 
         MongoCatalogSeeder seeder = new MongoCatalogSeeder(
                 new ObjectMapper().findAndRegisterModules(),
@@ -78,12 +79,13 @@ class MongoCatalogSeederTests {
 
         assertThat(parts).hasSize(5);
         assertThat(serviceTypes).hasSize(4);
-        assertThat(serviceDetails).hasSize(2);
+        assertThat(serviceDetails).hasSize(3);
         assertThat(serviceDetails.get(2).getTotalPrice()).isEqualByComparingTo("11400.00");
         assertThat(serviceDetails.get(3).getTotalPrice()).isEqualByComparingTo("10000.00");
+        assertThat(serviceDetails.get(4).getTotalPrice()).isEqualByComparingTo("11500.00");
         verify(partRepository, times(5)).save(any(PartCatalogItem.class));
         verify(serviceTypeRepository, times(4)).save(any(ServiceType.class));
-        verify(detailsRepository, times(2)).save(any(ServiceDetails.class));
+        verify(detailsRepository, times(3)).save(any(ServiceDetails.class));
     }
 
     private Service sqlService(int id, ServiceStatus status) {

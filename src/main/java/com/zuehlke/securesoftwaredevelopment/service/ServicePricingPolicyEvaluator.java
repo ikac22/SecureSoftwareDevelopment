@@ -47,6 +47,14 @@ public class ServicePricingPolicyEvaluator {
                 completedServices, partnerCode);
     }
 
+    String policyTierForCompletedServices(int completedServices) {
+        return PricingTier.fromCompletedServices(completedServices).name();
+    }
+
+    String policyResourceForCompletedServices(int completedServices) {
+        return "classpath:" + policyResource(PricingTier.fromCompletedServices(completedServices));
+    }
+
     private BigDecimal evaluate(PricingTier tier,
                                 BigDecimal laborPrice,
                                 BigDecimal partsPrice,
@@ -104,13 +112,16 @@ public class ServicePricingPolicyEvaluator {
     }
 
     private String loadTemplate(PricingTier tier) {
-        ClassPathResource resource = new ClassPathResource(
-                "pricing/" + tier.name().toLowerCase() + ".spel");
+        ClassPathResource resource = new ClassPathResource(policyResource(tier));
         try {
             return StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8).trim();
         } catch (IOException exception) {
             throw new IllegalStateException("Could not load pricing policy " + tier, exception);
         }
+    }
+
+    private String policyResource(PricingTier tier) {
+        return "pricing/" + tier.name().toLowerCase() + ".spel";
     }
 
     private PricingValues pricingValues(ServiceDetails details) {

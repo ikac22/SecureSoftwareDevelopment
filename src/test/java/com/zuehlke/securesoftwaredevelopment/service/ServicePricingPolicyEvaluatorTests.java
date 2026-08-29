@@ -28,6 +28,16 @@ class ServicePricingPolicyEvaluatorTests {
     }
 
     @Test
+    void exposesThePolicyResourceUsedForHistoricalPricingMetadata() {
+        assertThat(evaluator.policyTierForCompletedServices(0)).isEqualTo("BRONZE");
+        assertThat(evaluator.policyResourceForCompletedServices(0))
+                .isEqualTo("classpath:pricing/bronze.spel");
+        assertThat(evaluator.policyTierForCompletedServices(3)).isEqualTo("SILVER");
+        assertThat(evaluator.policyResourceForCompletedServices(6))
+                .isEqualTo("classpath:pricing/gold.spel");
+    }
+
+    @Test
     void bronzePolicyUsesPersistedPartnerCode() {
         ServiceDetails details = details("8000", "2000");
         Service service = service();

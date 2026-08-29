@@ -234,6 +234,8 @@ class ServiceWorkflowServiceTests {
     @Test
     void completingServiceValidatesWorkBeforeSqlTransition() {
         when(serviceRepository.complete(1)).thenReturn(true);
+        when(serviceRepository.findById(1)).thenReturn(Optional.of(
+                service(1, LocalTime.of(10, 0), 60, ServiceStatus.COMPLETED, "marko")));
 
         workflowService.complete(1);
 

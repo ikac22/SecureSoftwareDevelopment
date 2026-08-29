@@ -33,17 +33,19 @@ class MongoCatalogIntegrationTests {
     void embeddedMongoStartsAndSeedDataIsIdempotent() {
         assertThat(partCatalogRepository.count()).isEqualTo(5);
         assertThat(serviceTypeRepository.count()).isEqualTo(4);
-        assertThat(serviceDetailsRepository.count()).isEqualTo(2);
+        assertThat(serviceDetailsRepository.count()).isEqualTo(3);
 
         ServiceDetails inProgress = serviceDetailsRepository.findByServiceId(2).orElseThrow(AssertionError::new);
         ServiceDetails completed = serviceDetailsRepository.findByServiceId(3).orElseThrow(AssertionError::new);
+        ServiceDetails secondCompleted = serviceDetailsRepository.findByServiceId(4).orElseThrow(AssertionError::new);
         assertThat(inProgress.getTotalPrice()).isEqualByComparingTo("11400.00");
         assertThat(completed.getTotalPrice()).isEqualByComparingTo("10000.00");
+        assertThat(secondCompleted.getTotalPrice()).isEqualByComparingTo("11500.00");
 
         mongoCatalogSeeder.run(mock(ApplicationArguments.class));
 
         assertThat(partCatalogRepository.count()).isEqualTo(5);
         assertThat(serviceTypeRepository.count()).isEqualTo(4);
-        assertThat(serviceDetailsRepository.count()).isEqualTo(2);
+        assertThat(serviceDetailsRepository.count()).isEqualTo(3);
     }
 }

@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 @Component
@@ -40,7 +41,17 @@ public class ServiceFinalPriceService {
         }
 
         int completedServices = serviceRepository.countCompletedByPersonId(service.getPersonId());
-        details.setTotalPrice(pricingPolicyEvaluator.evaluate(details, service, customer, completedServices));
+        BigDecimal basePrice = details.getTotalPrice();
+        BigDecimal finalPrice = pricingPolicyEvaluator.evaluate(
+                details, service, customer, completedServices);
+
+        details.setTotalPrice(finalPrice);
+        details.setPricingPolicy(new ServiceDetails.PricingPolicySnapshot(
+                pricingPolicyEvaluator.policyTierForCompletedServices(completedServices),
+                pricingPolicyEvaluator.policyResourceForCompletedServices(completedServices),
+                basePrice,
+                finalPrice
+        ));
         details.setUpdatedAt(Instant.now());
         return serviceDetailsRepository.save(details);
     }

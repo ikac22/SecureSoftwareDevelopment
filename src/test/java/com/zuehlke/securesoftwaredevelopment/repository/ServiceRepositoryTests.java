@@ -62,8 +62,18 @@ class ServiceRepositoryTests {
                 .containsExactly("Mercedes S 560", "Ford Focus");
         assertThat(serviceRepository.findByPersonId(2))
                 .extracting(Service::getCarModel)
-                .containsExactly("Honda Civic");
+                .containsExactly("Honda Civic", "Volkswagen Golf");
         assertThat(serviceRepository.findByPersonId(3))
+                .extracting(Service::getCarModel)
+                .containsExactly("Honda Civic");
+    }
+
+    @Test
+    void activeCustomerQueryExcludesCompletedHistory() {
+        assertThat(serviceRepository.findActiveByPersonId(1))
+                .extracting(Service::getCarModel)
+                .containsExactly("Mercedes S 560");
+        assertThat(serviceRepository.findActiveByPersonId(2))
                 .extracting(Service::getCarModel)
                 .containsExactly("Honda Civic");
     }
