@@ -47,6 +47,11 @@ jobs:
           java-version: '8'
           cache: maven
 
+      - name: Configure Git identity for local snapshot tags
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
       - name: Make scripts executable
         run: chmod +x mvnw attacks/cwe-943/run-attack.sh attacks/cwe-943/tag-snapshots.sh
 
