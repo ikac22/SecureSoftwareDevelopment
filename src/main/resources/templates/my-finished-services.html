@@ -122,28 +122,20 @@
             const bundleForm = document.getElementById('documentBundleForm');
             const bundleService = document.getElementById('documentBundleService');
 
-            function addFilter(filters, field, elementId) {
+            function inputValue(elementId) {
                 const value = document.getElementById(elementId).value.trim();
-                if (value) {
-                    filters[field] = value;
-                }
+                return value || null;
             }
 
             function requestBody() {
-                const filters = {};
-                const view = {};
-                addFilter(filters, 'carModel', 'historyCarModel');
-                addFilter(filters, 'performedServices.name', 'historyServiceName');
-                addFilter(filters, 'performedServices.usedParts.name', 'historyPartName');
-                addFilter(filters, 'technician', 'historyTechnician');
-
-                if (document.getElementById('historyShowServices').checked) {
-                    view['performedServices.name'] = 1;
-                }
-                if (document.getElementById('historyShowParts').checked) {
-                    view['performedServices.usedParts'] = 1;
-                }
-                return {filters: filters, view: view};
+                return {
+                    carModel: inputValue('historyCarModel'),
+                    serviceName: inputValue('historyServiceName'),
+                    partName: inputValue('historyPartName'),
+                    technician: inputValue('historyTechnician'),
+                    showPerformedServices: document.getElementById('historyShowServices').checked,
+                    showUsedParts: document.getElementById('historyShowParts').checked
+                };
             }
 
             function appendText(parent, value, className) {

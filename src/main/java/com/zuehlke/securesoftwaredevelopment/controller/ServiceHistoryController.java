@@ -12,9 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 @Controller
 public class ServiceHistoryController {
@@ -35,10 +33,15 @@ public class ServiceHistoryController {
     public List<ServiceDetails> searchHistory(@RequestBody(required = false) ServiceHistorySearch request,
                                               Authentication authentication) {
         User customer = authenticatedCustomer(authentication);
+        ServiceHistorySearch search = request == null ? new ServiceHistorySearch() : request;
         return serviceHistoryService.search(
                 customer.getId(),
-                request == null ? null : request.getFilters(),
-                request == null ? null : request.getView());
+                search.getCarModel(),
+                search.getServiceName(),
+                search.getPartName(),
+                search.getTechnician(),
+                search.isShowPerformedServices(),
+                search.isShowUsedParts());
     }
 
     private User authenticatedCustomer(Authentication authentication) {
@@ -49,23 +52,59 @@ public class ServiceHistoryController {
     }
 
     public static class ServiceHistorySearch {
-        private Map<String, Object> filters = new LinkedHashMap<>();
-        private Map<String, Object> view = new LinkedHashMap<>();
+        private String carModel;
+        private String serviceName;
+        private String partName;
+        private String technician;
+        private boolean showPerformedServices;
+        private boolean showUsedParts;
 
-        public Map<String, Object> getFilters() {
-            return filters;
+        public String getCarModel() {
+            return carModel;
         }
 
-        public void setFilters(Map<String, Object> filters) {
-            this.filters = filters == null ? new LinkedHashMap<>() : filters;
+        public void setCarModel(String carModel) {
+            this.carModel = carModel;
         }
 
-        public Map<String, Object> getView() {
-            return view;
+        public String getServiceName() {
+            return serviceName;
         }
 
-        public void setView(Map<String, Object> view) {
-            this.view = view == null ? new LinkedHashMap<>() : view;
+        public void setServiceName(String serviceName) {
+            this.serviceName = serviceName;
+        }
+
+        public String getPartName() {
+            return partName;
+        }
+
+        public void setPartName(String partName) {
+            this.partName = partName;
+        }
+
+        public String getTechnician() {
+            return technician;
+        }
+
+        public void setTechnician(String technician) {
+            this.technician = technician;
+        }
+
+        public boolean isShowPerformedServices() {
+            return showPerformedServices;
+        }
+
+        public void setShowPerformedServices(boolean showPerformedServices) {
+            this.showPerformedServices = showPerformedServices;
+        }
+
+        public boolean isShowUsedParts() {
+            return showUsedParts;
+        }
+
+        public void setShowUsedParts(boolean showUsedParts) {
+            this.showUsedParts = showUsedParts;
         }
     }
 }

@@ -7,7 +7,6 @@ import com.zuehlke.securesoftwaredevelopment.repository.ServiceHistorySearchRepo
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 
 @org.springframework.stereotype.Service
 public class ServiceHistoryService {
@@ -33,8 +32,19 @@ public class ServiceHistoryService {
     }
 
     public List<ServiceDetails> search(int authenticatedCustomerId,
-                                       Map<String, Object> filters,
-                                       Map<String, Object> view) {
-        return serviceHistorySearchRepository.search(authenticatedCustomerId, filters, view);
+                                       String carModel,
+                                       String serviceName,
+                                       String partName,
+                                       String technician,
+                                       boolean showPerformedServices,
+                                       boolean showUsedParts) {
+        return serviceHistorySearchRepository.search(
+                authenticatedCustomerId,
+                carModel,
+                serviceName,
+                partName,
+                technician,
+                showPerformedServices,
+                showUsedParts);
     }
 }

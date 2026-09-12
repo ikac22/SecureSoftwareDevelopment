@@ -42,7 +42,7 @@ class ServiceHistorySearchHttpIntegrationTests {
         mockMvc.perform(post("/api/my/service-history/search")
                 .principal(bruce)
                 .contentType(APPLICATION_JSON)
-                .content("{\"filters\":{},\"view\":{\"performedServices.name\":1,\"performedServices.usedParts\":1}}"))
+                .content("{\"showPerformedServices\":true,\"showUsedParts\":true}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].serviceId").value(3))
@@ -54,32 +54,42 @@ class ServiceHistorySearchHttpIntegrationTests {
     }
 
     @Test
-    void operatorInReservedCustomerFilterBypassesImplicitOwnershipPredicate() throws Exception {
+    void clientCannotReplaceOwnershipPredicateWithMongoOperator() throws Exception {
         mockMvc.perform(post("/api/my/service-history/search")
                 .principal(bruce)
                 .contentType(APPLICATION_JSON)
                 .content("{\"filters\":{\"customerId\":{\"$ne\":1}},\"view\":{}}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].serviceId").value(4))
-                .andExpect(jsonPath("$[0].carModel").value("Volkswagen Golf"));
+                .andExpect(jsonPath("$[0].serviceId").value(3))
+                .andExpect(jsonPath("$[0].customerId").value(nullValue()));
     }
 
     @Test
-    void projectionInputCanRevealHiddenPricingPolicyMetadata() throws Exception {
+    void clientCannotExpandProjectionWithArbitraryMongoFields() throws Exception {
         mockMvc.perform(post("/api/my/service-history/search")
                 .principal(bruce)
                 .contentType(APPLICATION_JSON)
-                .content("{\"filters\":{\"carModel\":\"Ford Focus\"},"
+                .content("{\"carModel\":\"Ford Focus\","
                         + "\"view\":{\"customerId\":1,\"pricingPolicy\":1}}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].serviceId").value(3))
-                .andExpect(jsonPath("$[0].customerId").value(1))
-                .andExpect(jsonPath("$[0].pricingPolicy.tier").value("BRONZE"))
-                .andExpect(jsonPath("$[0].pricingPolicy.resource")
-                        .value("classpath:pricing/bronze.spel"))
-                .andExpect(jsonPath("$[0].pricingPolicy.basePrice").value(10000.0))
-                .andExpect(jsonPath("$[0].pricingPolicy.finalPrice").value(10000.0));
+                .andExpect(jsonPath("$[0].customerId").value(nullValue()))
+                .andExpect(jsonPath("$[0].pricingPolicy").value(nullValue()));
+    }
+
+    @Test
+    void typedDomainFiltersStillWork() throws Exception {
+        mockMvc.perform(post("/api/my/service-history/search")
+                .principal(bruce)
+                .contentType(APPLICATION_JSON)
+                .content("{\"carModel\":\"Ford Focus\",\"serviceName\":"
+                        + "\"Engine oil and filter replacement\",\"showPerformedServices\":true}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].serviceId").value(3))
+                .andExpect(jsonPath("$[0].performedServices[0].name")
+                        .value("Engine oil and filter replacement"));
     }
 }

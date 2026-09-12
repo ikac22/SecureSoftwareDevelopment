@@ -1,0 +1,4 @@
+httpStatus=200
+foreignServiceReturned=true
+customerIdExposed=true
+pricingPolicyExposed=true
