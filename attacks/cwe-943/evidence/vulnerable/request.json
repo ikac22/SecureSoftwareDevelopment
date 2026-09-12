@@ -1,0 +1,4 @@
+{
+  "filters": {"customerId": {"$ne": 1}},
+  "view": {"customerId": 1, "pricingPolicy": 1}
+}
