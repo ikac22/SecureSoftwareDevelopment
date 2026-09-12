@@ -20,4 +20,4 @@ Za čas "Autentifikacija"
 
 ## Ekstenzija za demonstraciju injekcionih slabosti
 
-Repozitorijum sadrži namensku ekstenziju sa pet scenarija injekcionih slabosti analiziranih u master radu. Kratak pregled funkcionalnosti, relevantnog ranjivog koda i eksperimentalnih grana sa opisima napada i mitigacija nalazi se u [`injection-vulns-extension.md`](injection-vulns-extension.md).
+Aplikacija sadrži dodatni skup namerno ranjivih funkcionalnosti namenjenih učenju identifikacije, demonstracije i mitigacije injekcionih slabosti. Pregled svih scenarija, relevantnih delova koda, grana za vežbu i pratećih materijala nalazi se u [`injection-vulns-extension.md`](injection-vulns-extension.md).
