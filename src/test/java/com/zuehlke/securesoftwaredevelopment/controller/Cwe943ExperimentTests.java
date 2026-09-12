@@ -76,6 +76,9 @@ class Cwe943ExperimentTests {
         writeEvidence(phase, ATTACK_REQUEST, attackResponse,
                 attackResult.getResponse().getStatus(), foreignServiceReturned,
                 customerIdExposed, pricingPolicyExposed);
+        printEvidence(phase, ATTACK_REQUEST, attackResponse,
+                attackResult.getResponse().getStatus(), foreignServiceReturned,
+                customerIdExposed, pricingPolicyExposed);
 
         assertEquals(200, attackResult.getResponse().getStatus());
         if ("vulnerable".equals(phase)) {
@@ -141,10 +144,35 @@ class Cwe943ExperimentTests {
         Files.write(evidenceDir.resolve("request.json"), request.getBytes(StandardCharsets.UTF_8));
         Files.write(evidenceDir.resolve("response.json"), response.getBytes(StandardCharsets.UTF_8));
 
-        String result = "httpStatus=" + status + "\n"
+        String result = resultText(status, foreignServiceReturned, customerIdExposed, pricingPolicyExposed);
+        Files.write(evidenceDir.resolve("result.txt"), result.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private void printEvidence(String phase,
+                               String request,
+                               String response,
+                               int status,
+                               boolean foreignServiceReturned,
+                               boolean customerIdExposed,
+                               boolean pricingPolicyExposed) {
+        System.out.println("CWE943_EVIDENCE_BEGIN phase=" + phase);
+        System.out.println("CWE943_REQUEST_BEGIN");
+        System.out.println(request);
+        System.out.println("CWE943_REQUEST_END");
+        System.out.println("CWE943_RESPONSE_BEGIN");
+        System.out.println(response);
+        System.out.println("CWE943_RESPONSE_END");
+        System.out.print(resultText(status, foreignServiceReturned, customerIdExposed, pricingPolicyExposed));
+        System.out.println("CWE943_EVIDENCE_END");
+    }
+
+    private String resultText(int status,
+                              boolean foreignServiceReturned,
+                              boolean customerIdExposed,
+                              boolean pricingPolicyExposed) {
+        return "httpStatus=" + status + "\n"
                 + "foreignServiceReturned=" + foreignServiceReturned + "\n"
                 + "customerIdExposed=" + customerIdExposed + "\n"
                 + "pricingPolicyExposed=" + pricingPolicyExposed + "\n";
-        Files.write(evidenceDir.resolve("result.txt"), result.getBytes(StandardCharsets.UTF_8));
     }
 }
