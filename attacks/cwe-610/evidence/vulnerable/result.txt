@@ -1,0 +1,7 @@
+readHttpStatus=200
+readTraversalReturnedOutsideResource=true
+overwriteProbeHttpStatus=409
+overwriteProbeRecognizedOutsideTarget=true
+overwriteHttpStatus=200
+outsideTargetModified=true
+positiveControlPassed=true
