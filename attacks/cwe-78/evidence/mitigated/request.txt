@@ -1,0 +1,3 @@
+POST /services/127/documents/bundle
+files=service-overview.pdf
+files=--to-command=cat>service-overview.pdf;touch${IFS}bundle-extra.pdf

@@ -76,6 +76,7 @@ public class ServiceDocumentBundleService {
         command.add(persistentArchive.toString());
         command.add("-C");
         command.add(extractionDirectory.toString());
+        command.add("--");
         command.addAll(extractionArguments);
         runCmd(command, extractionDirectory);
     }
@@ -128,14 +129,13 @@ public class ServiceDocumentBundleService {
             }
             String fileName = rawFileName.trim();
             validateFileLikeShape(fileName);
+            if (!ALLOWED_DOCUMENTS.contains(fileName)) {
+                throw invalidSelection("Unsupported service document");
+            }
             selected.add(fileName);
             if (selected.size() > MAX_SELECTED_FILES) {
                 throw invalidSelection("Too many documents selected");
             }
-        }
-
-        if (selected.stream().noneMatch(ALLOWED_DOCUMENTS::contains)) {
-            throw invalidSelection("At least one service document must be selected");
         }
         return new ArrayList<>(selected);
     }

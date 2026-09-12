@@ -68,26 +68,24 @@ class ServiceDocumentBundleServiceTests {
     }
 
     @Test
-    void extractionArgumentsReachGnuTarToCommandParser() throws Exception {
+    void rejectsUnsupportedDocumentBeforeStartingTar() throws Exception {
         ServiceRepository repository = repositoryWith(completedService(127, 42));
         ServiceDocumentStorage storage = storageWithArchive(127);
         ServiceDocumentBundleService bundleService =
                 new ServiceDocumentBundleService(repository, storage);
 
         String injectedExtractionOption =
-                "--to-command=cat>service-overview.pdf;cd${IFS}..;touch${IFS}bundle-proof.pdf";
-        byte[] bundle = bundleService.createBundle(127, 42, Arrays.asList(
-                injectedExtractionOption,
-                ServiceDocumentBundleService.SERVICE_OVERVIEW));
+                "--to-command=cat>service-overview.pdf;touch${IFS}bundle-extra.pdf";
 
-        Path returnedArchive = tempDirectory.resolve("injected-selected.tar");
-        Files.write(returnedArchive, bundle);
-        assertThat(listArchiveMembers(returnedArchive, false))
-                .containsExactly(ServiceDocumentBundleService.SERVICE_OVERVIEW);
-        assertThat(storage.serviceDirectory(127).resolve("bundle-proof.pdf")).exists();
+        assertThatThrownBy(() -> bundleService.createBundle(127, 42, Arrays.asList(
+                ServiceDocumentBundleService.SERVICE_OVERVIEW,
+                injectedExtractionOption)))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(error -> assertThat(((ResponseStatusException) error).getStatus())
+                        .isEqualTo(HttpStatus.BAD_REQUEST));
+
+        assertThat(storage.serviceDirectory(127).resolve("bundle-extra.pdf")).doesNotExist();
         assertThat(storage.serviceArchive(127)).exists();
-
-        Files.deleteIfExists(storage.serviceDirectory(127).resolve("bundle-proof.pdf"));
     }
 
     private ServiceDocumentStorage storageWithArchive(int serviceId) throws Exception {
