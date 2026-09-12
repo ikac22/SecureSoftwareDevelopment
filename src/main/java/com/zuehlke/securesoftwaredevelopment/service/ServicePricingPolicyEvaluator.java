@@ -6,6 +6,7 @@ import com.zuehlke.securesoftwaredevelopment.domain.mongo.ServiceDetails;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.SimpleEvaluationContext;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StreamUtils;
 
@@ -71,44 +72,24 @@ public class ServicePricingPolicyEvaluator {
         }
 
         BigDecimal basePrice = safeLaborPrice.add(safePartsPrice);
-        String template = loadTemplate(tier);
-        String expressionText = renderExpression(
-                template,
-                basePrice,
-                safeLaborPrice,
-                safePartsPrice,
-                estimatedDurationMinutes,
-                completedServices,
-                partnerCode
-        );
+        String trustedPolicyText = loadTemplate(tier);
+        Expression policy = parser.parseExpression(trustedPolicyText);
 
-        Expression expression = parser.parseExpression(expressionText);
-        Object result = expression.getValue();
+        SimpleEvaluationContext context =
+                SimpleEvaluationContext.forReadOnlyDataBinding().build();
+        context.setVariable("basePrice", basePrice);
+        context.setVariable("laborPrice", safeLaborPrice);
+        context.setVariable("partsPrice", safePartsPrice);
+        context.setVariable("estimatedDurationMinutes", estimatedDurationMinutes);
+        context.setVariable("completedServices", completedServices);
+        context.setVariable("partnerCode", partnerCode == null ? "" : partnerCode);
+
+        Object result = policy.getValue(context);
         BigDecimal finalPrice = monetaryValue(result);
         if (finalPrice.signum() < 0) {
             throw new IllegalStateException("Pricing policy returned a negative price");
         }
         return finalPrice.setScale(2, RoundingMode.HALF_UP);
-    }
-
-    String renderExpression(String template,
-                            BigDecimal basePrice,
-                            BigDecimal laborPrice,
-                            BigDecimal partsPrice,
-                            int estimatedDurationMinutes,
-                            int completedServices,
-                            String partnerCode) {
-        String persistedCode = partnerCode == null ? "" : partnerCode;
-
-        // Pricing resources are templates. Their values are deliberately materialized
-        // by string replacement before the resulting expression is parsed.
-        return template
-                .replace("${basePrice}", basePrice.toPlainString())
-                .replace("${laborPrice}", laborPrice.toPlainString())
-                .replace("${partsPrice}", partsPrice.toPlainString())
-                .replace("${estimatedDurationMinutes}", Integer.toString(estimatedDurationMinutes))
-                .replace("${completedServices}", Integer.toString(completedServices))
-                .replace("${partnerCode}", "'" + persistedCode + "'");
     }
 
     private String loadTemplate(PricingTier tier) {
