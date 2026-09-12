@@ -1,0 +1,4 @@
+POST /my-gallery/upload
+fileName=../../outside-write.jpg
+overwrite=false
+imageContent=CWE610_TARGET_AFTER
