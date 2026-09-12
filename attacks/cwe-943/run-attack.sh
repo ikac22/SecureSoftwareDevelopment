@@ -61,7 +61,7 @@ run_phase() {
   set +e
   (
     cd "$worktree"
-    ./mvnw -B \
+    bash ./mvnw -B \
       -Dtest=com.zuehlke.securesoftwaredevelopment.controller.Cwe943ExperimentTests \
       -Dcwe943.phase="$phase" \
       test
