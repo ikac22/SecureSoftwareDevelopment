@@ -37,7 +37,27 @@ class PersonalGalleryServiceTests {
     }
 
     @Test
-    void rejectsTraversalForANewFileBecauseSanitizationIsReached() {
+    void regularExistingImageCanStillBeOverwritten() throws Exception {
+        Path galleryRoot = tempDirectory.resolve("user-galleries");
+        PersonalGalleryService service = new PersonalGalleryService(galleryRoot.toString());
+
+        MockMultipartFile original = new MockMultipartFile(
+                "image", "original.jpg", "image/jpeg", "before".getBytes(StandardCharsets.UTF_8));
+        MockMultipartFile replacement = new MockMultipartFile(
+                "image", "replacement.jpg", "image/jpeg", "after".getBytes(StandardCharsets.UTF_8));
+
+        service.store(1, original, "photo.jpg", false);
+        PersonalGalleryService.UploadResult probe = service.store(1, replacement, "photo.jpg", false);
+        PersonalGalleryService.UploadResult overwritten = service.store(1, replacement, "photo.jpg", true);
+
+        assertThat(probe.getStatus()).isEqualTo(PersonalGalleryService.UploadStatus.REQUIRES_OVERWRITE);
+        assertThat(overwritten.getStatus()).isEqualTo(PersonalGalleryService.UploadStatus.OVERWRITTEN);
+        assertThat(new String(Files.readAllBytes(galleryRoot.resolve("1/photo.jpg")), StandardCharsets.UTF_8))
+                .isEqualTo("after");
+    }
+
+    @Test
+    void rejectsTraversalForANewFile() {
         Path galleryRoot = tempDirectory.resolve("user-galleries");
         PersonalGalleryService service = new PersonalGalleryService(galleryRoot.toString());
 
@@ -53,52 +73,49 @@ class PersonalGalleryServiceTests {
     }
 
     @Test
-    void existingTraversalTargetRequestsOverwriteBeforeSanitization() throws Exception {
+    void existingTraversalTargetIsRejectedBeforeOverwriteProbe() throws Exception {
         Path galleryRoot = tempDirectory.resolve("user-galleries");
         Files.createDirectories(galleryRoot.resolve("1"));
-        Path outsideTarget = tempDirectory.resolve("pricing.spel");
-        Files.write(outsideTarget, "trusted-policy".getBytes(StandardCharsets.UTF_8));
+        Path outsideTarget = tempDirectory.resolve("outside.jpg");
+        Files.write(outsideTarget, "before".getBytes(StandardCharsets.UTF_8));
 
         PersonalGalleryService service = new PersonalGalleryService(galleryRoot.toString());
         MockMultipartFile replacement = new MockMultipartFile(
                 "image",
                 "photo.jpg",
                 "image/jpeg",
-                "replacement-policy".getBytes(StandardCharsets.UTF_8));
+                "after".getBytes(StandardCharsets.UTF_8));
 
-        PersonalGalleryService.UploadResult firstAttempt = service.store(
-                1, replacement, "../../pricing.spel", false);
-
-        assertThat(firstAttempt.getStatus())
-                .isEqualTo(PersonalGalleryService.UploadStatus.REQUIRES_OVERWRITE);
+        assertThatThrownBy(() -> service.store(1, replacement, "../../outside.jpg", false))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("unsupported characters");
         assertThat(new String(Files.readAllBytes(outsideTarget), StandardCharsets.UTF_8))
-                .isEqualTo("trusted-policy");
+                .isEqualTo("before");
     }
 
     @Test
-    void overwriteBranchWritesExistingUnsanitizedTraversalTarget() throws Exception {
+    void overwriteTraversalCannotModifyExistingOutsideTarget() throws Exception {
         Path galleryRoot = tempDirectory.resolve("user-galleries");
         Files.createDirectories(galleryRoot.resolve("1"));
-        Path outsideTarget = tempDirectory.resolve("pricing.spel");
-        Files.write(outsideTarget, "trusted-policy".getBytes(StandardCharsets.UTF_8));
+        Path outsideTarget = tempDirectory.resolve("outside.jpg");
+        Files.write(outsideTarget, "before".getBytes(StandardCharsets.UTF_8));
 
         PersonalGalleryService service = new PersonalGalleryService(galleryRoot.toString());
         MockMultipartFile replacement = new MockMultipartFile(
                 "image",
                 "photo.jpg",
                 "image/jpeg",
-                "replacement-policy".getBytes(StandardCharsets.UTF_8));
+                "after".getBytes(StandardCharsets.UTF_8));
 
-        PersonalGalleryService.UploadResult result = service.store(
-                1, replacement, "../../pricing.spel", true);
-
-        assertThat(result.getStatus()).isEqualTo(PersonalGalleryService.UploadStatus.OVERWRITTEN);
+        assertThatThrownBy(() -> service.store(1, replacement, "../../outside.jpg", true))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("unsupported characters");
         assertThat(new String(Files.readAllBytes(outsideTarget), StandardCharsets.UTF_8))
-                .isEqualTo("replacement-policy");
+                .isEqualTo("before");
     }
 
     @Test
-    void displayLookupCanResolveOutsideGalleryRoot() throws Exception {
+    void displayLookupRejectsResourceOutsideGalleryRoot() throws Exception {
         Path galleryRoot = tempDirectory.resolve("user-galleries");
         Files.createDirectories(galleryRoot);
         Path outsideFile = tempDirectory.resolve("README.md");
@@ -106,10 +123,23 @@ class PersonalGalleryServiceTests {
 
         PersonalGalleryService service = new PersonalGalleryService(galleryRoot.toString());
 
-        Resource resource = service.loadForDisplay("../README.md");
+        assertThatThrownBy(() -> service.loadForDisplay("../README.md"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("escapes the gallery root");
+    }
+
+    @Test
+    void displayLookupStillReturnsResourceInsideGalleryRoot() throws Exception {
+        Path galleryRoot = tempDirectory.resolve("user-galleries");
+        Files.createDirectories(galleryRoot.resolve("1"));
+        Path image = galleryRoot.resolve("1/photo.jpg");
+        Files.write(image, "inside-gallery".getBytes(StandardCharsets.UTF_8));
+
+        PersonalGalleryService service = new PersonalGalleryService(galleryRoot.toString());
+        Resource resource = service.loadForDisplay("1/photo.jpg");
 
         assertThat(resource.exists()).isTrue();
         assertThat(new String(Files.readAllBytes(resource.getFile().toPath()), StandardCharsets.UTF_8))
-                .isEqualTo("outside-gallery");
+                .isEqualTo("inside-gallery");
     }
 }
