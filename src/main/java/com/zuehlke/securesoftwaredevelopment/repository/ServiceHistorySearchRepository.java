@@ -7,9 +7,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 @Repository
 public class ServiceHistorySearchRepository {
@@ -20,21 +18,26 @@ public class ServiceHistorySearchRepository {
     }
 
     public List<ServiceDetails> search(int authenticatedCustomerId,
-                                       Map<String, Object> filters,
-                                       Map<String, Object> view) {
-        Map<String, Object> effectiveFilters = filters == null
-                ? Collections.emptyMap()
-                : filters;
-        Map<String, Object> effectiveView = view == null
-                ? Collections.emptyMap()
-                : view;
-
-        Document match = new Document(effectiveFilters);
-        match.putIfAbsent("customerId", authenticatedCustomerId);
-        match.put("completedAt", new Document("$ne", null));
+                                       String carModel,
+                                       String serviceName,
+                                       String partName,
+                                       String technician,
+                                       boolean showPerformedServices,
+                                       boolean showUsedParts) {
+        Document match = new Document("customerId", authenticatedCustomerId)
+                .append("completedAt", new Document("$ne", null));
+        appendTextCriterion(match, "carModel", carModel);
+        appendTextCriterion(match, "performedServices.name", serviceName);
+        appendTextCriterion(match, "performedServices.usedParts.name", partName);
+        appendTextCriterion(match, "technician", technician);
 
         Document projection = baseProjection();
-        projection.putAll(effectiveView);
+        if (showPerformedServices || showUsedParts) {
+            projection.append("performedServices.name", 1);
+        }
+        if (showUsedParts) {
+            projection.append("performedServices.usedParts", 1);
+        }
 
         List<Document> pipeline = Arrays.asList(
                 new Document("$match", match),
@@ -49,6 +52,16 @@ public class ServiceHistorySearchRepository {
             results.add(mongoTemplate.getConverter().read(ServiceDetails.class, document));
         }
         return results;
+    }
+
+    private void appendTextCriterion(Document match, String field, String value) {
+        if (value == null) {
+            return;
+        }
+        String normalized = value.trim();
+        if (!normalized.isEmpty()) {
+            match.append(field, normalized);
+        }
     }
 
     private Document baseProjection() {
