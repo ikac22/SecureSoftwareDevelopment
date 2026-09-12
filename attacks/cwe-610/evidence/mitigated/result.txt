@@ -1,0 +1,7 @@
+readHttpStatus=404
+readTraversalReturnedOutsideResource=false
+overwriteProbeHttpStatus=400
+overwriteProbeRecognizedOutsideTarget=false
+overwriteHttpStatus=400
+outsideTargetModified=false
+positiveControlPassed=true
