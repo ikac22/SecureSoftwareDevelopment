@@ -1,0 +1,5 @@
+baselineHttpStatus=200
+attackHttpStatus=200
+baselineDiscountedPrice=10000.00
+attackDiscountedPrice=9500.00
+injectedLogicChangedPrice=true
