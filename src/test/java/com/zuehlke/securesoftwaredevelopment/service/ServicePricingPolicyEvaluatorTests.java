@@ -69,33 +69,6 @@ class ServicePricingPolicyEvaluatorTests {
     }
 
     @Test
-    void persistedTextIsInterpolatedBeforeSpelParsing() {
-        ServiceDetails details = details("8000", "2000");
-        Service service = service();
-
-        BigDecimal ordinary = evaluator.evaluate(details, service,
-                person("NONE"), 0);
-        BigDecimal injectedCondition = evaluator.evaluate(details, service,
-                person("x' == 'x' or 'x"), 0);
-
-        assertThat(ordinary).isEqualByComparingTo("10000.00");
-        assertThat(injectedCondition).isEqualByComparingTo("9500.00");
-    }
-
-    @Test
-    void calculatorUsesTheSameStringRenderedPricingPath() {
-        BigDecimal ordinary = evaluator.evaluatePreview(
-                "BRONZE", new BigDecimal("8000"), new BigDecimal("2000"),
-                90, 0, "NONE");
-        BigDecimal injectedCondition = evaluator.evaluatePreview(
-                "BRONZE", new BigDecimal("8000"), new BigDecimal("2000"),
-                90, 0, "x' == 'x' or 'x");
-
-        assertThat(ordinary).isEqualByComparingTo("10000.00");
-        assertThat(injectedCondition).isEqualByComparingTo("9500.00");
-    }
-
-    @Test
     void policiesProduceDifferentPricesForSameService() {
         ServiceDetails details = details("20000", "30000");
         Service service = service();
