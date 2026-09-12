@@ -1,0 +1,1 @@
+GET /gallery/image?path=../outside-read.txt

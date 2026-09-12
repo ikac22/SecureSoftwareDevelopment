@@ -23,11 +23,11 @@ public class PersonalGalleryService {
     private final Path galleryRoot;
 
     public PersonalGalleryService(@Value("${app.gallery.root:user-galleries}") String galleryRoot) {
-        this.galleryRoot = Paths.get(galleryRoot);
+        this.galleryRoot = Paths.get(galleryRoot).toAbsolutePath().normalize();
     }
 
     public List<String> listImages(int personId) {
-        Path userGallery = galleryRoot.resolve(Integer.toString(personId));
+        Path userGallery = galleryRoot.resolve(Integer.toString(personId)).normalize();
         if (!Files.isDirectory(userGallery)) {
             return Collections.emptyList();
         }
@@ -54,9 +54,7 @@ public class PersonalGalleryService {
             throw new IllegalArgumentException("Absolute image paths are not supported");
         }
 
-        // Deliberately vulnerable for the educational scenario: the path is normalized,
-        // but there is no post-resolution containment check against galleryRoot.
-        Path file = galleryRoot.resolve(supplied).normalize();
+        Path file = resolveInside(galleryRoot, requestedPath, "Image path escapes the gallery root");
         try {
             Resource resource = new UrlResource(file.toUri());
             if (!resource.exists() || !resource.isReadable() || Files.isDirectory(file)) {
@@ -79,14 +77,18 @@ public class PersonalGalleryService {
             throw new IllegalArgumentException("Server file name is required");
         }
 
-        Path userGallery = galleryRoot.resolve(Integer.toString(personId));
-        Path destination = userGallery.resolve(requestedFileName);
+        // Validate the client-controlled reference before any existence check or overwrite decision.
+        validateNewFileName(requestedFileName);
+
+        Path userGallery = galleryRoot.resolve(Integer.toString(personId)).normalize();
+        Path destination = resolveInside(
+                userGallery,
+                requestedFileName,
+                "Gallery image path escapes the personal gallery");
 
         try {
             Files.createDirectories(userGallery);
 
-            // Intentional validation-order flaw for the teaching example.
-            // Existing targets enter this branch before the file name is sanitized.
             if (Files.exists(destination)) {
                 if (!overwrite) {
                     return UploadResult.requiresOverwrite(requestedFileName);
@@ -96,12 +98,20 @@ public class PersonalGalleryService {
                 return UploadResult.overwritten(requestedFileName);
             }
 
-            validateNewFileName(requestedFileName);
             Files.copy(image.getInputStream(), destination);
             return UploadResult.created(requestedFileName);
         } catch (IOException exception) {
             throw new IllegalStateException("Could not store gallery image", exception);
         }
+    }
+
+    private Path resolveInside(Path allowedRoot, String requestedPath, String errorMessage) {
+        Path normalizedRoot = allowedRoot.toAbsolutePath().normalize();
+        Path resolved = normalizedRoot.resolve(requestedPath).toAbsolutePath().normalize();
+        if (!resolved.startsWith(normalizedRoot)) {
+            throw new IllegalArgumentException(errorMessage);
+        }
+        return resolved;
     }
 
     private void validateNewFileName(String requestedFileName) {
