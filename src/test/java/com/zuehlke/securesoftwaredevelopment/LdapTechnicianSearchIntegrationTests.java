@@ -32,7 +32,7 @@ class LdapTechnicianSearchIntegrationTests {
     }
 
     @Test
-    void ldapWildcardInjectionExpandsDirectorySearch() throws Exception {
+    void ldapWildcardIsTreatedAsLiteralSearchData() throws Exception {
         mockMvc.perform(get("/services/1/available-slots")
                 .with(user("service-manager"))
                 .param("date", "2030-06-01")
@@ -47,9 +47,7 @@ class LdapTechnicianSearchIntegrationTests {
                 .param("estimatedDurationMinutes", "60")
                 .param("search", "*"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(13))
-                .andExpect(jsonPath("$[0].technician.id").exists())
-                .andExpect(jsonPath("$[12].technician.id").exists());
+                .andExpect(jsonPath("$").isEmpty());
     }
 
     @Test

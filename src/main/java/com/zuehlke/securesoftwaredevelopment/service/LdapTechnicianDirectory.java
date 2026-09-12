@@ -4,6 +4,7 @@ import com.zuehlke.securesoftwaredevelopment.domain.Technician;
 import org.springframework.ldap.core.AttributesMapper;
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.ldap.filter.EqualsFilter;
+import org.springframework.ldap.support.LdapEncoder;
 import org.springframework.stereotype.Component;
 
 import javax.naming.NamingEnumeration;
@@ -47,10 +48,11 @@ public class LdapTechnicianDirectory implements TechnicianDirectory {
         }
 
         String normalizedQuery = query.trim();
+        String escapedQuery = LdapEncoder.filterEncode(normalizedQuery);
         Map<String, Technician> matches = new LinkedHashMap<>();
 
         for (String attribute : SEARCH_ATTRIBUTES) {
-            String filter = "(&(objectClass=inetOrgPerson)(" + attribute + "=*" + normalizedQuery + "*))";
+            String filter = "(&(objectClass=inetOrgPerson)(" + attribute + "=*" + escapedQuery + "*))";
             for (Technician technician : searchPeople(filter)) {
                 matches.putIfAbsent(technician.getId(), technician);
             }
