@@ -36,8 +36,9 @@ class Cwe943ExperimentTests {
             + "}";
 
     private static final String NORMAL_REQUEST = "{\n"
-            + "  \"filters\": {\"carModel\": \"Ford Focus\"},\n"
-            + "  \"view\": {\"performedServices.name\": 1, \"performedServices.usedParts\": 1}\n"
+            + "  \"carModel\": \"Ford Focus\",\n"
+            + "  \"showPerformedServices\": true,\n"
+            + "  \"showUsedParts\": true\n"
             + "}";
 
     @Autowired
@@ -57,7 +58,7 @@ class Cwe943ExperimentTests {
 
     @Test
     void runCwe943Experiment() throws Exception {
-        String phase = System.getProperty("cwe943.phase", "vulnerable");
+        String phase = System.getProperty("cwe943.phase", "mitigated");
         assertTrue("vulnerable".equals(phase) || "mitigated".equals(phase),
                 "cwe943.phase must be vulnerable or mitigated");
 
@@ -87,6 +88,7 @@ class Cwe943ExperimentTests {
             assertTrue(pricingPolicyExposed, "attack must expose pricingPolicy");
         } else {
             assertFalse(foreignServiceReturned, "mitigation must preserve ownership boundary");
+            assertFalse(customerIdExposed, "mitigation must keep customerId out of the client-controlled projection");
             assertFalse(pricingPolicyExposed, "mitigation must prevent arbitrary projection expansion");
             verifyNormalSearchStillWorks();
         }
