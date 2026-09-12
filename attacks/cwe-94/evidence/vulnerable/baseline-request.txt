@@ -1,0 +1,4 @@
+POST /loyalty-calculator
+Content-Type: application/x-www-form-urlencoded
+
+tier=BRONZE&laborPrice=8000&partsPrice=2000&estimatedDurationMinutes=60&completedServices=1&partnerCode=NONE
